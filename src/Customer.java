@@ -6,9 +6,19 @@ public class Customer {
     private double xCoordinate;
     private double yCoordinate;
     private int[] demandPerScenario;
+    private int id;
 
-    public Customer() {
+    public Customer(int id) {
+        this.id = id;
+    }
 
+    /**
+     * Get unique number of customer
+     *
+     * @return unique number of customer
+     */
+    public int getId() {
+        return id;
     }
 
     /**

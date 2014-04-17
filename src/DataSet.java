@@ -10,9 +10,28 @@ public class DataSet {
     private int numberOfScenarios;
     private double[] scenarioProbabilities;
     private Customer[] customers;
+    private double[][] travelCosts;
 
     public DataSet() {
 
+    }
+
+    /**
+     * Get matrix with travel costs between customers
+     *
+     * @return matrix with travel costs between customers
+     */
+    public double[][] getTravelCosts() {
+        return travelCosts;
+    }
+
+    /**
+     * Set matrix with travel costs between customers
+     *
+     * @param travelCosts matrix with travel costs between customers
+     */
+    public void setTravelCosts(double[][] travelCosts) {
+        this.travelCosts = travelCosts;
     }
 
     /**

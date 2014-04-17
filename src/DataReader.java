@@ -27,8 +27,8 @@ public class DataReader {
             // Read number of customers
             s = reader.readLine();
             split = s.split(" ");
-            int nrOfCustomers = Integer.parseInt(split[split.length - 1]);
-            newData.setNumberOfCustomers(nrOfCustomers);
+            int numberOfCustomers = Integer.parseInt(split[split.length - 1]);
+            newData.setNumberOfCustomers(numberOfCustomers);
 
             // Read vehicle capacity
             s = reader.readLine();
@@ -47,6 +47,53 @@ public class DataReader {
             split = s.split(" ");
             int numberOfScenarios = Integer.parseInt(split[split.length - 1]);
             newData.setNumberOfScenarios(numberOfScenarios);
+
+            // Skip two lines
+            reader.readLine();
+            reader.readLine();
+
+            // Read locations of customers
+            Customer[] customers = new Customer[numberOfCustomers + 1];
+            Customer tempCustomer;
+            int id;
+            double xCoordinate, yCoordinate;
+            for (int i = 0; i <= numberOfCustomers; i++) {
+                s = reader.readLine();
+                split = s.split(" ");
+                id = Integer.parseInt(split[0]);
+                if (id != i) {
+                    throw new AssertionError("Customers are not succeeding in coordinates");
+                }
+                tempCustomer = new Customer(id);
+                xCoordinate = Double.parseDouble(split[1]);
+                tempCustomer.setxCoordinate(xCoordinate);
+                yCoordinate = Double.parseDouble(split[2]);
+                tempCustomer.setyCoordinate(yCoordinate);
+                customers[i] = tempCustomer;
+            }
+
+            // Skip two lines
+            reader.readLine();
+            reader.readLine();
+
+            // Read demand scenarios for each customer
+            int[] demandScenario;
+            int numberOfCustomer;
+            for (int i = 1; i <= numberOfCustomers; i++) {
+                demandScenario = new int[numberOfScenarios];
+                s = reader.readLine();
+                split = s.split(" ");
+                numberOfCustomer = Integer.parseInt(split[0]);
+                if (numberOfCustomer != i) {
+                    throw new AssertionError("Customers are not succeeding in demand scenarios");
+                }
+                for (int j = 0; j < numberOfScenarios; j++) {
+                    demandScenario[j] = Integer.parseInt(split[j + 1]);
+                }
+                customers[i].setDemandPerScenario(demandScenario);
+            }
+
+            newData.setCustomers(customers);
 
         } catch (FileNotFoundException e) {
             System.out.println("File not found");
