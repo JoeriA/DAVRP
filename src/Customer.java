@@ -3,10 +3,10 @@
  */
 public class Customer {
 
+    private final int id;
     private double xCoordinate;
     private double yCoordinate;
     private int[] demandPerScenario;
-    private int id;
 
     public Customer(int id) {
         this.id = id;

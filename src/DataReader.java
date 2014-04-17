@@ -6,7 +6,7 @@ import java.io.IOException;
 /**
  * Created by Joeri on 16-4-2014.
  */
-public class DataReader {
+class DataReader {
 
     public DataReader() {
 
