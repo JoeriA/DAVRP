@@ -93,7 +93,21 @@ public class DataReader {
                 customers[i].setDemandPerScenario(demandScenario);
             }
 
+            // Save customers
             newData.setCustomers(customers);
+
+            // Skip two lines
+            reader.readLine();
+            reader.readLine();
+
+            // Read probabilities of each scenario occurring
+            s = reader.readLine();
+            split = s.split(" ");
+            double[] scenarioProbabilities = new double[numberOfScenarios];
+            for (int i = 0; i < numberOfScenarios; i++) {
+                scenarioProbabilities[i] = Double.parseDouble(split[i]);
+            }
+            newData.setScenarioProbabilities(scenarioProbabilities);
 
         } catch (FileNotFoundException e) {
             System.out.println("File not found");
