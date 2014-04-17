@@ -109,6 +109,21 @@ public class DataReader {
             }
             newData.setScenarioProbabilities(scenarioProbabilities);
 
+            // Skip two lines
+            reader.readLine();
+            reader.readLine();
+
+            // Read travel costs
+            double[][] travelCosts = new double[numberOfCustomers + 1][numberOfCustomers + 1];
+            for (int i = 0; i <= numberOfCustomers; i++) {
+                s = reader.readLine();
+                split = s.split(" ");
+                for (int j = 0; j <= numberOfCustomers; j++) {
+                    travelCosts[i][j] = Double.parseDouble(split[j]);
+                }
+            }
+            newData.setTravelCosts(travelCosts);
+
         } catch (FileNotFoundException e) {
             System.out.println("File not found");
         } catch (IOException e) {
@@ -119,8 +134,10 @@ public class DataReader {
                     reader.close();
                 }
             } catch (IOException e) {
+                System.out.println("Error closing the reader");
             }
         }
+
         return newData;
     }
 }
