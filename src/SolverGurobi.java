@@ -39,7 +39,7 @@ public class SolverGurobi {
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < m; k++) {
                 for (int omega = 0; omega < o; omega++) {
-                    d[i][k][omega] = model.addVar(0.0, (double) Q, 0.0, GRB.CONTINUOUS, "d" + i + "_" + k + "^" + omega);
+                    d[i][k][omega] = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "d" + i + "_" + k + "^" + omega);
                 }
             }
         }
@@ -48,7 +48,7 @@ public class SolverGurobi {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-                        f[i][j][k][omega] = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "f" + i + "_" + j + "_" + k + "^" + omega);
+                        f[i][j][k][omega] = model.addVar(0.0, (double) Q, 0.0, GRB.INTEGER, "f" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
@@ -185,6 +185,39 @@ public class SolverGurobi {
                 model.addConstr(expr, GRB.LESS_EQUAL, 0.0, "c10" + k + "^" + omega);
             }
         }
+        // Valid inequalities
+        int sum;
+        for (int omega = 0; omega < o; omega++) {
+            sum = 0;
+            expr = new GRBLinExpr();
+            for (int i = 1; i < n; i++) {
+                for (int k = 0; k < m; k++) {
+                    expr.addTerm(1.0, x[0][i][k][omega]);
+                }
+                sum += customers[i].getDemandPerScenario()[omega];
+            }
+            model.addConstr(expr, GRB.GREATER_EQUAL, Math.ceil((double) sum / (double) Q), "v1" + omega);
+        }
+        for (int k = 0; k < m - 1; k++) {
+            expr = new GRBLinExpr();
+            for (int i = 1; i < n; i++) {
+                expr.addTerm(1.0, a[i][k]);
+                expr.addTerm(-1.0, a[i][k + 1]);
+            }
+            model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "v2" + k);
+        }
+        for (int k = 0; k < m - 1; k++) {
+            for (int omega = 0; omega < o; omega++) {
+                expr = new GRBLinExpr();
+                for (int i = 0; i < n; i++) {
+                    expr.addTerm(1.0, x[0][i][k][omega]);
+                    expr.addTerm(-1.0, x[0][i][k + 1][omega]);
+                }
+                model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "v3" + k + "^" + omega);
+            }
+        }
+
+
         model.write("DAVRP.lp");
         // Optimize model
         model.optimize();
