@@ -29,6 +29,8 @@ class DataReader {
             split = s.split(" ");
             int numberOfCustomers = Integer.parseInt(split[split.length - 1]);
             newData.setNumberOfCustomers(numberOfCustomers);
+            // Set number of vehicles equal to number of customers
+            newData.setNumberOfVehicles(numberOfCustomers);
 
             // Read vehicle capacity
             s = reader.readLine();
@@ -92,6 +94,12 @@ class DataReader {
                 }
                 customers[i].setDemandPerScenario(demandScenario);
             }
+            // Set demands of depot to zero
+            demandScenario = new int[numberOfScenarios];
+            for (int i = 0; i < numberOfScenarios; i++) {
+                demandScenario[i] = 0;
+            }
+            customers[0].setDemandPerScenario(demandScenario);
 
             // Save customers
             newData.setCustomers(customers);

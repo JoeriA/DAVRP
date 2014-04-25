@@ -11,9 +11,28 @@ public class DataSet {
     private double[] scenarioProbabilities;
     private Customer[] customers;
     private double[][] travelCosts;
+    private int numberOfVehicles;
 
     public DataSet() {
 
+    }
+
+    /**
+     * Get number of vehicles
+     *
+     * @return number of vehicles
+     */
+    public int getNumberOfVehicles() {
+        return numberOfVehicles;
+    }
+
+    /**
+     * Set number of vehicles
+     *
+     * @param numberOfVehicles number of vehicles
+     */
+    public void setNumberOfVehicles(int numberOfVehicles) {
+        this.numberOfVehicles = numberOfVehicles;
     }
 
     /**
