@@ -48,7 +48,7 @@ public class SolverGurobi {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-                        f[i][j][k][omega] = model.addVar(0.0, (double) Q, 0.0, GRB.INTEGER, "f" + i + "_" + j + "_" + k + "^" + omega);
+                        f[i][j][k][omega] = model.addVar(0.0, (double) Q, 0.0, GRB.CONTINUOUS, "f" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
@@ -214,6 +214,16 @@ public class SolverGurobi {
                     expr.addTerm(-1.0, x[0][i][k + 1][omega]);
                 }
                 model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "v3" + k + "^" + omega);
+            }
+        }
+        // Dissalowed variables
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < m; k++) {
+                for (int omega = 0; omega < o; omega++) {
+                    expr = new GRBLinExpr();
+                    expr.addTerm(1.0, x[j][j][k][omega]);
+                    model.addConstr(expr, GRB.EQUAL, 0.0, "d" + j);
+                }
             }
         }
 
