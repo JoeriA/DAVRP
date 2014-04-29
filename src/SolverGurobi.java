@@ -3,14 +3,15 @@
  */
 
 import gurobi.*;
+import ilog.concert.IloException;
 
-public class SolverGurobi {
+public class SolverGurobi implements Solver {
 
     public SolverGurobi() {
 
     }
 
-    public void solve(DataSet dataSet) throws GRBException {
+    public void solve(DataSet dataSet) throws GRBException, IloException {
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers();
         int m = dataSet.getNumberOfVehicles();
@@ -227,8 +228,11 @@ public class SolverGurobi {
             }
         }
 
-
         model.write("DAVRP.lp");
+
+        // Tune the model
+        model.tune();
+
         // Optimize model
         model.optimize();
         System.out.println("Obj: " + model.get(GRB.DoubleAttr.ObjVal));

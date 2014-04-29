@@ -2,16 +2,17 @@
  * Created by Joeri on 25-4-2014.
  */
 
-import ilog.concert.IloException;
+import gurobi.GRBException;
+import ilog.concert.*;
 import ilog.cplex.IloCplex;
 
-public class SolverCplex {
+public class SolverCplex implements Solver {
 
     public SolverCplex() {
 
     }
 
-    public void solve(DataSet dataSet) throws IloException {
+    public void solve(DataSet dataSet) throws GRBException, IloException {
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers();
         int m = dataSet.getNumberOfVehicles();
@@ -25,100 +26,100 @@ public class SolverCplex {
         int demand;
         double alpha = dataSet.getAlpha();
         // Create environment
-        IloCplex cplex = new IloCplex();
+        IloCplex model = new IloCplex();
         //GRBEnv env = new GRBEnv("mip.log");
         // Create model
         //GRBModel model = new GRBModel(env);
         // Create variables
-//        GRBVar[][] a = new GRBVar[n][m];
+        IloNumVar[][] a = new IloNumVar[n][m];
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < m; k++) {
-//                a[i][k] = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "a" + i + "_" + k);
+                a[i][k] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "a" + i + "_" + k);
             }
         }
-//        GRBVar[][][] d = new GRBVar[n][m][o];
+        IloNumVar[][][] d = new IloNumVar[n][m][o];
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < m; k++) {
                 for (int omega = 0; omega < o; omega++) {
-//                    d[i][k][omega] = model.addVar(0.0, (double) Q, 0.0, GRB.CONTINUOUS, "d" + i + "_" + k + "^" + omega);
+                    d[i][k][omega] = model.numVar(0.0, 1.0, IloNumVarType.Float, "d" + i + "_" + k + "^" + omega);
                 }
             }
         }
-//        GRBVar[][][][] f = new GRBVar[n][n][m][o];
+        IloNumVar[][][][] f = new IloNumVar[n][n][m][o];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-//                        f[i][j][k][omega] = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "f" + i + "_" + j + "_" + k + "^" + omega);
+                        f[i][j][k][omega] = model.numVar(0.0, (double) Q, IloNumVarType.Float, "f" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
         }
-//        GRBVar[][][][] x = new GRBVar[n][n][m][o];
+        IloNumVar[][][][] x = new IloNumVar[n][n][m][o];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-//                        x[i][j][k][omega] = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "x" + i + "_" + j + "_" + k + "^" + omega);
+                        x[i][j][k][omega] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "x" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
         }
-        // Integrate new variables
-//        model.update();
         // Set objective
-//        GRBLinExpr expr = new GRBLinExpr();
+        IloLinearNumExpr expr = model.linearNumExpr();
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-//                        expr.addTerm(p[omega] * c[i][j], x[i][j][k][omega]);
+                        expr.addTerm(p[omega] * c[i][j], x[i][j][k][omega]);
                     }
                 }
             }
         }
-//        model.setObjective(expr, GRB.MINIMIZE);
+        IloObjective obj = model.minimize(expr);
+        model.add(obj);
+
         // Add restrictions
         // 2
         for (int i = 1; i < n; i++) {
-//            expr = new GRBLinExpr();
+            expr = model.linearNumExpr();
             for (int k = 0; k < m; k++) {
-//                expr.addTerm(1.0, a[i][k]);
+                expr.addTerm(1.0, a[i][k]);
             }
-//            model.addConstr(expr, GRB.EQUAL, 1.0, "c2" + i);
+            model.addEq(expr, 1.0, "c2" + i);
         }
         // 3
         for (int i = 1; i < n; i++) {
             for (int omega = 0; omega < o; omega++) {
-//                expr = new GRBLinExpr();
+                expr = model.linearNumExpr();
                 for (int k = 0; k < m; k++) {
                     for (int j = 0; j < n; j++) {
-//                        expr.addTerm(1.0, x[i][j][k][omega]);
+                        expr.addTerm(1.0, x[i][j][k][omega]);
                     }
                 }
-//                model.addConstr(expr, GRB.EQUAL, 1.0, "c3" + i + "^" + omega);
+                model.addEq(expr, 1.0, "c3" + i + "^" + omega);
             }
         }
         // 4
         for (int omega = 0; omega < o; omega++) {
             for (int k = 0; k < m; k++) {
-//                expr = new GRBLinExpr();
+                expr = model.linearNumExpr();
                 for (int j = 1; j < n; j++) {
-//                    expr.addTerm(1.0, x[0][j][k][omega]);
+                    expr.addTerm(1.0, x[0][j][k][omega]);
                 }
-//                model.addConstr(expr, GRB.LESS_EQUAL, 1.0, "c4" + k + "^" + omega);
+                model.addLe(expr, 1.0, "c4" + k + "^" + omega);
             }
         }
         // 5
         for (int i = 0; i < n; i++) {
             for (int omega = 0; omega < o; omega++) {
                 for (int k = 0; k < m; k++) {
-//                    expr = new GRBLinExpr();
+                    expr = model.linearNumExpr();
                     for (int j = 0; j < n; j++) {
-//                        expr.addTerm(1.0, x[i][j][k][omega]);
-//                        expr.addTerm(-1.0, x[j][i][k][omega]);
+                        expr.addTerm(1.0, x[i][j][k][omega]);
+                        expr.addTerm(-1.0, x[j][i][k][omega]);
                     }
-//                    model.addConstr(expr, GRB.EQUAL, 0.0, "c5" + i + "_" + k + "^" + omega);
+                    model.addEq(expr, 0.0, "c5" + i + "_" + k + "^" + omega);
                 }
             }
         }
@@ -126,13 +127,13 @@ public class SolverCplex {
         for (int i = 1; i < n; i++) {
             for (int omega = 0; omega < o; omega++) {
                 for (int k = 0; k < m; k++) {
-//                    expr = new GRBLinExpr();
+                    expr = model.linearNumExpr();
                     for (int j = 0; j < n; j++) {
-//                        expr.addTerm(1.0, f[j][i][k][omega]);
-//                        expr.addTerm(-1.0, f[i][j][k][omega]);
-//                        expr.addTerm(-(double) customers[i].getDemandPerScenario()[omega], x[i][j][k][omega]);
+                        expr.addTerm(1.0, f[j][i][k][omega]);
+                        expr.addTerm(-1.0, f[i][j][k][omega]);
+                        expr.addTerm(-(double) customers[i].getDemandPerScenario()[omega], x[i][j][k][omega]);
                     }
-//                    model.addConstr(expr, GRB.EQUAL, 0.0, "c6" + i + "_" + k + "^" + omega);
+                    model.addEq(expr, 0.0, "c6" + i + "_" + k + "^" + omega);
                 }
             }
         }
@@ -141,10 +142,10 @@ public class SolverCplex {
             for (int omega = 0; omega < o; omega++) {
                 for (int k = 0; k < m; k++) {
                     for (int j = 0; j < n; j++) {
-//                        expr = new GRBLinExpr();
-//                        expr.addTerm(1.0, f[i][j][k][omega]);
-//                        expr.addTerm((double) (customers[i].getDemandPerScenario()[omega]-Q), x[i][j][k][omega]);
-//                        model.addConstr(expr, GRB.LESS_EQUAL, 0.0, "c7" + i + "_" + j + "_" + k + "^" + omega);
+                        expr = model.linearNumExpr();
+                        expr.addTerm(1.0, f[i][j][k][omega]);
+                        expr.addTerm((double) (customers[i].getDemandPerScenario()[omega] - Q), x[i][j][k][omega]);
+                        model.addLe(expr, 0.0, "c7" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
@@ -154,10 +155,10 @@ public class SolverCplex {
             for (int omega = 0; omega < o; omega++) {
                 for (int k = 0; k < m; k++) {
                     for (int i = 0; i < n; i++) {
-//                        expr = new GRBLinExpr();
-//                        expr.addTerm(1.0, f[i][j][k][omega]);
-//                        expr.addTerm(-(double) customers[j].getDemandPerScenario()[omega], x[i][j][k][omega]);
-//                        model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "c8" + i + "_" + j + "_" + k + "^" + omega);
+                        expr = model.linearNumExpr();
+                        expr.addTerm(1.0, f[i][j][k][omega]);
+                        expr.addTerm(-(double) customers[j].getDemandPerScenario()[omega], x[i][j][k][omega]);
+                        model.addGe(expr, 0.0, "c8" + i + "_" + j + "_" + k + "^" + omega);
                     }
                 }
             }
@@ -166,31 +167,70 @@ public class SolverCplex {
         for (int i = 1; i < n; i++) {
             for (int omega = 0; omega < o; omega++) {
                 for (int k = 0; k < m; k++) {
-//                    expr = new GRBLinExpr();
-//                    expr.addTerm(1.0, a[i][k]);
+                    expr = model.linearNumExpr();
+                    expr.addTerm(1.0, a[i][k]);
                     for (int j = 0; j < n; j++) {
-//                        expr.addTerm(-1.0, x[i][j][k][omega]);
+                        expr.addTerm(-1.0, x[i][j][k][omega]);
                     }
-//                    model.addConstr(expr, GRB.LESS_EQUAL, d[i][k][omega], "c9" + i + "_" + k + "^" + omega);
+                    model.addLe(expr, d[i][k][omega], "c9" + i + "_" + k + "^" + omega);
                 }
             }
         }
         // 10
         for (int omega = 0; omega < o; omega++) {
             for (int k = 0; k < m; k++) {
-//                expr = new GRBLinExpr();
+                expr = model.linearNumExpr();
                 for (int i = 1; i < n; i++) {
-//                    expr.addTerm(1.0, d[i][k][omega]);
-//                    expr.addTerm(alpha - 1.0, a[i][k]);
+                    expr.addTerm(1.0, d[i][k][omega]);
+                    expr.addTerm(alpha - 1.0, a[i][k]);
                 }
-//                model.addConstr(expr, GRB.LESS_EQUAL, 0.0, "c10" + k + "^" + omega);
+                model.addLe(expr, 0.0, "c10" + k + "^" + omega);
             }
         }
-//        model.write("DAVRP.lp");
+        // Valid inequalities
+        int sum;
+        for (int omega = 0; omega < o; omega++) {
+            sum = 0;
+            expr = model.linearNumExpr();
+            for (int i = 1; i < n; i++) {
+                for (int k = 0; k < m; k++) {
+                    expr.addTerm(1.0, x[0][i][k][omega]);
+                }
+                sum += customers[i].getDemandPerScenario()[omega];
+            }
+            model.addGe(expr, Math.ceil((double) sum / (double) Q), "v1" + omega);
+        }
+        for (int k = 0; k < m - 1; k++) {
+            expr = model.linearNumExpr();
+            for (int i = 1; i < n; i++) {
+                expr.addTerm(1.0, a[i][k]);
+                expr.addTerm(-1.0, a[i][k + 1]);
+            }
+            model.addGe(expr, 0.0, "v2" + k);
+        }
+        for (int k = 0; k < m - 1; k++) {
+            for (int omega = 0; omega < o; omega++) {
+                expr = model.linearNumExpr();
+                for (int i = 0; i < n; i++) {
+                    expr.addTerm(1.0, x[0][i][k][omega]);
+                    expr.addTerm(-1.0, x[0][i][k + 1][omega]);
+                }
+                model.addGe(expr, 0.0, "v3" + k + "^" + omega);
+            }
+        }
+        // Dissalowed variables
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < m; k++) {
+                for (int omega = 0; omega < o; omega++) {
+                    expr = model.linearNumExpr();
+                    expr.addTerm(1.0, x[j][j][k][omega]);
+                    model.addEq(expr, 0.0, "d" + j);
+                }
+            }
+        }
         // Optimize model
-//        model.optimize();
-//        System.out.println("Obj: " + model.get(GRB.DoubleAttr.ObjVal));
-//        model.dispose();
-//        env.dispose();
+        model.solve();
+        System.out.println("Obj: " + model.getObjValue());
     }
+
 }
