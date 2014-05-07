@@ -7,8 +7,11 @@ import ilog.concert.IloException;
 
 public class SolverGurobi implements Solver {
 
-    public SolverGurobi() {
+    private double objectiveValue, runTime, gap;
+    private String name;
 
+    public SolverGurobi() {
+        name = "Gurobi";
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
@@ -217,7 +220,7 @@ public class SolverGurobi implements Solver {
                 model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "v3" + k + "^" + omega);
             }
         }
-        // Dissalowed variables
+        // Disallowed variables
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < m; k++) {
                 for (int omega = 0; omega < o; omega++) {
@@ -235,9 +238,41 @@ public class SolverGurobi implements Solver {
 
         // Optimize model
         model.optimize();
-        System.out.println("Obj: " + model.get(GRB.DoubleAttr.ObjVal));
+        objectiveValue = model.get(GRB.DoubleAttr.ObjVal);
+        runTime = model.get(GRB.DoubleAttr.Runtime);
+        gap = model.get(GRB.DoubleAttr.MIPGap);
         model.dispose();
         env.dispose();
     }
 
+    /**
+     * Get objective value
+     *
+     * @return objective value
+     */
+    public double getObjectiveValue() {
+        return objectiveValue;
+    }
+
+    /**
+     * Get runtime
+     *
+     * @return runtime
+     */
+    public double getRunTime() {
+        return runTime;
+    }
+
+    /**
+     * Get gap
+     *
+     * @return gap
+     */
+    public double getGap() {
+        return gap;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

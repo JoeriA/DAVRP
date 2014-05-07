@@ -8,8 +8,11 @@ import ilog.cplex.IloCplex;
 
 public class SolverCplex implements Solver {
 
-    public SolverCplex() {
+    private double objectiveValue, runTime, gap;
+    private String name;
 
+    public SolverCplex() {
+        name = "Cplex";
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
@@ -27,9 +30,6 @@ public class SolverCplex implements Solver {
         double alpha = dataSet.getAlpha();
         // Create environment
         IloCplex model = new IloCplex();
-        //GRBEnv env = new GRBEnv("mip.log");
-        // Create model
-        //GRBModel model = new GRBModel(env);
         // Create variables
         IloNumVar[][] a = new IloNumVar[n][m];
         for (int i = 0; i < n; i++) {
@@ -218,7 +218,7 @@ public class SolverCplex implements Solver {
                 model.addGe(expr, 0.0, "v3" + k + "^" + omega);
             }
         }
-        // Dissalowed variables
+        // Disallowed variables
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < m; k++) {
                 for (int omega = 0; omega < o; omega++) {
@@ -230,7 +230,41 @@ public class SolverCplex implements Solver {
         }
         // Optimize model
         model.solve();
-        System.out.println("Obj: " + model.getObjValue());
+        objectiveValue = model.getObjValue();
+        runTime = model.getCplexTime();
+        gap = model.getMIPRelativeGap();
+
+        model.clearModel();
     }
 
+    /**
+     * Get objective value
+     *
+     * @return objective value
+     */
+    public double getObjectiveValue() {
+        return objectiveValue;
+    }
+
+    /**
+     * Get runtime
+     *
+     * @return runtime
+     */
+    public double getRunTime() {
+        return runTime;
+    }
+
+    /**
+     * Get gap
+     *
+     * @return gap
+     */
+    public double getGap() {
+        return gap;
+    }
+
+    public String getName() {
+        return name;
+    }
 }
