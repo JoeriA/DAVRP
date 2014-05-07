@@ -10,13 +10,14 @@ import java.io.FileWriter;
 class DAVRP {
     public static void main(String[] args) {
 
-        String instance = "DAVRPInstance2";
+        String instance = "DAVRPInstance1";
 
         DataReader dataReader = new DataReader();
         DataSet test = dataReader.readFile("Test Instances/" + instance);
 //        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
-        Solver solver = new SolverClustering();
+//        Solver solver = new SolverClustering();
+        Solver solver = new SolverClusteringLargest();
         try {
             solver.solve(test);
             System.out.println("Runtime: " + solver.getRunTime() + " seconds");

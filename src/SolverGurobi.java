@@ -23,9 +23,6 @@ public class SolverGurobi implements Solver {
         Customer[] customers = dataSet.getCustomers();
         double[] p = dataSet.getScenarioProbabilities();
         double[][] c = dataSet.getTravelCosts();
-        Customer customer;
-        int[] demands;
-        int demand;
         double alpha = dataSet.getAlpha();
         // Create environment
         GRBEnv env = new GRBEnv("mip.log");
@@ -232,9 +229,6 @@ public class SolverGurobi implements Solver {
         }
 
         model.write("DAVRP.lp");
-
-        // Tune the model
-        model.tune();
 
         // Optimize model
         model.optimize();

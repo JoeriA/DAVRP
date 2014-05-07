@@ -6,13 +6,13 @@ import ilog.cplex.IloCplex;
  * Created by Joeri on 7-5-2014.
  */
 
-public class SolverClustering implements Solver {
+public class SolverClusteringLargest implements Solver {
 
     private double objectiveValue, runTime, gap;
     private String name;
 
-    public SolverClustering() {
-        name = "Clustering";
+    public SolverClusteringLargest() {
+        name = "ClusteringLargest";
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
@@ -23,9 +23,21 @@ public class SolverClustering implements Solver {
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
         Customer[] customers = dataSet.getCustomers();
-        double[] p = dataSet.getScenarioProbabilities();
         double[][] c = dataSet.getTravelCosts();
         double alpha = dataSet.getAlpha();
+
+        // Get largest demands
+        int[] demands = new int[n];
+        int highestDemand;
+        for (int i = 1; i < demands.length; i++) {
+            highestDemand = 0;
+            for (int k = 0; k < o; k++) {
+                if (customers[i].getDemandPerScenario()[k] > highestDemand) {
+                    highestDemand = customers[i].getDemandPerScenario()[k];
+                }
+            }
+            demands[i] = highestDemand;
+        }
 
         // Create environment
         IloCplex model = new IloCplex();
@@ -41,14 +53,6 @@ public class SolverClustering implements Solver {
                 z[i][j] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "z" + i + "_" + j);
             }
         }
-        IloNumVar[][][] z2 = new IloNumVar[n][n][o];
-        for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                for (int k = 0; k < o; k++) {
-                    z2[i][j][k] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "z" + i + "_" + j + "^" + o);
-                }
-            }
-        }
 
         // Set objective
         IloLinearNumExpr expr = model.linearNumExpr();
@@ -57,9 +61,7 @@ public class SolverClustering implements Solver {
             for (int i = 1; i < n; i++) {
                 for (int k = 0; k < m; k++) {
                     for (int omega = 0; omega < o; omega++) {
-                        expr.addTerm(p[omega] * c[i][j], z2[i][j][omega]);
-                        expr.addTerm(p[omega] * c[0][i], z[i][j]);
-                        expr.addTerm(-p[omega] * c[0][i], z2[i][j][omega]);
+                        expr.addTerm(c[i][j], z[i][j]);
                     }
                 }
             }
@@ -85,38 +87,14 @@ public class SolverClustering implements Solver {
                 model.addLe(expr, 0.0, "c3" + i + "_" + j);
             }
         }
-        // 4
-        for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                for (int k = 0; k < o; k++) {
-                    expr = model.linearNumExpr();
-                    expr.addTerm(1.0, z2[i][j][k]);
-                    expr.addTerm(-1.0, z[i][j]);
-                    model.addLe(expr, 0.0, "c4" + i + "_" + j + "^" + k);
-                }
-            }
-        }
         // 5
         for (int j = 0; j < n; j++) {
-            for (int k = 0; k < o; k++) {
-                expr = model.linearNumExpr();
-                for (int i = 1; i < n; i++) {
-                    expr.addTerm(customers[i].getDemandPerScenario()[k], z2[i][j][k]);
-                }
-                expr.addTerm(-Q, y[j]);
-                model.addLe(expr, 0.0, "c5" + j + "^" + k);
+            expr = model.linearNumExpr();
+            for (int i = 1; i < n; i++) {
+                expr.addTerm(demands[i], z[i][j]);
             }
-        }
-        // 6
-        for (int j = 1; j < n; j++) {
-            for (int k = 0; k < o; k++) {
-                expr = model.linearNumExpr();
-                for (int i = 1; i < n; i++) {
-                    expr.addTerm(alpha, z[i][j]);
-                    expr.addTerm(-1.0, z2[i][j][k]);
-                }
-                model.addLe(expr, 0.0, "c5" + j + "^" + k);
-            }
+            expr.addTerm(-Q, y[j]);
+            model.addLe(expr, 0.0, "c5" + j);
         }
 
         // Optimize model

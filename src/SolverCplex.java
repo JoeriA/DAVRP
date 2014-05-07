@@ -24,9 +24,6 @@ public class SolverCplex implements Solver {
         Customer[] customers = dataSet.getCustomers();
         double[] p = dataSet.getScenarioProbabilities();
         double[][] c = dataSet.getTravelCosts();
-        Customer customer;
-        int[] demands;
-        int demand;
         double alpha = dataSet.getAlpha();
         // Create environment
         IloCplex model = new IloCplex();
