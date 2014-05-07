@@ -10,15 +10,22 @@ import java.io.FileWriter;
 class DAVRP {
     public static void main(String[] args) {
 
-        String instance = "DAVRPInstance1";
-
-        DataReader dataReader = new DataReader();
-        DataSet test = dataReader.readFile("Test Instances/" + instance);
 //        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
 //        Solver solver = new SolverClustering();
         Solver solver = new SolverClusteringLargest();
+
+        for (int i = 65; i <= 65; i++) {
+            String instance = "DAVRPInstance" + i;
+            solve(instance, solver);
+        }
+
+    }
+
+    private static void solve(String instance, Solver solver) {
         try {
+            DataReader dataReader = new DataReader();
+            DataSet test = dataReader.readFile("Test Instances/" + instance);
             solver.solve(test);
             System.out.println("Runtime: " + solver.getRunTime() + " seconds");
             System.out.println("Objective value: " + solver.getObjectiveValue());
@@ -30,7 +37,6 @@ class DAVRP {
         } catch (IloException e) {
             e.printStackTrace();
         }
-
     }
 
     private static void writeToFile(String instance, Solver solver) {
