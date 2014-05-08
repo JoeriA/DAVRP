@@ -226,9 +226,10 @@ public class SolverCplex implements Solver {
             }
         }
         // Optimize model
+        Long start = System.currentTimeMillis();
         model.solve();
+        runTime = (System.currentTimeMillis() - start) / 1000.0;
         objectiveValue = model.getObjValue();
-        runTime = model.getCplexTime();
         gap = model.getMIPRelativeGap();
 
         model.clearModel();

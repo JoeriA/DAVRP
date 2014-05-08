@@ -231,9 +231,10 @@ public class SolverGurobi implements Solver {
         model.write("DAVRP.lp");
 
         // Optimize model
+        Long start = System.currentTimeMillis();
         model.optimize();
+        runTime = (System.currentTimeMillis() - start) / 1000.0;
         objectiveValue = model.get(GRB.DoubleAttr.ObjVal);
-        runTime = model.get(GRB.DoubleAttr.Runtime);
         gap = model.get(GRB.DoubleAttr.MIPGap);
         model.dispose();
         env.dispose();

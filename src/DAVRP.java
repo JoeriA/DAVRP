@@ -8,17 +8,27 @@ import java.io.FileWriter;
  * Created by Joeri on 11-4-2014.
  */
 class DAVRP {
+
+    private static Window window;
+
     public static void main(String[] args) {
+
+        window = new Window();
 
 //        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
-//        Solver solver = new SolverClustering();
-        Solver solver = new SolverClusteringLargest();
+        Solver solver = new SolverClustering();
+//        Solver solver = new SolverClusteringLargest();
 
-        for (int i = 65; i <= 65; i++) {
+        int start = 1;
+        int end = 1;
+
+        for (int i = start; i <= end; i++) {
             String instance = "DAVRPInstance" + i;
             solve(instance, solver);
         }
+
+        window.setTitle("DAVRP instance " + end);
 
     }
 
@@ -27,6 +37,7 @@ class DAVRP {
             DataReader dataReader = new DataReader();
             DataSet test = dataReader.readFile("Test Instances/" + instance);
             solver.solve(test);
+            window.createMap(test);
             System.out.println("Runtime: " + solver.getRunTime() + " seconds");
             System.out.println("Objective value: " + solver.getObjectiveValue());
             System.out.println("Gap: " + solver.getGap());

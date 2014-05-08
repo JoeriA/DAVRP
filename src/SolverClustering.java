@@ -120,9 +120,11 @@ public class SolverClustering implements Solver {
         }
 
         // Optimize model
+        model.setOut(null);
+        Long start = System.currentTimeMillis();
         model.solve();
+        runTime = (System.currentTimeMillis() - start) / 1000.0;
         objectiveValue = model.getObjValue();
-        runTime = model.getCplexTime();
         gap = model.getMIPRelativeGap();
 
         model.clearModel();
