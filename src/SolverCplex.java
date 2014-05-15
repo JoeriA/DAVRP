@@ -8,16 +8,16 @@ import ilog.cplex.IloCplex;
 
 public class SolverCplex implements Solver {
 
-    private double objectiveValue, runTime, gap;
-    private String name;
+    private Solution solution;
 
     public SolverCplex() {
-        name = "Cplex";
+        solution = new Solution();
+        solution.setName("Exact method (CPLEX)");
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
         // Get some data from dataset
-        int n = dataSet.getNumberOfCustomers();
+        int n = dataSet.getNumberOfCustomers() + 1;
         int m = dataSet.getNumberOfVehicles();
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
@@ -65,9 +65,12 @@ public class SolverCplex implements Solver {
         // Set objective
         IloLinearNumExpr expr = model.linearNumExpr();
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                for (int k = 0; k < m; k++) {
-                    for (int omega = 0; omega < o; omega++) {
+            for (int k = 0; k < m; k++) {
+                expr.addTerm(0.0, a[i][k]);
+                for (int omega = 0; omega < o; omega++) {
+                    expr.addTerm(0.0, d[i][k][omega]);
+                    for (int j = 0; j < n; j++) {
+                        expr.addTerm(0.0, f[i][j][k][omega]);
                         expr.addTerm(p[omega] * c[i][j], x[i][j][k][omega]);
                     }
                 }
@@ -226,43 +229,37 @@ public class SolverCplex implements Solver {
             }
         }
         // Optimize model
+        model.setParam(IloCplex.DoubleParam.TiLim, 10.0);
+        model.setParam(IloCplex.DoubleParam.EpGap, 0.0001);
         Long start = System.currentTimeMillis();
         model.solve();
-        runTime = (System.currentTimeMillis() - start) / 1000.0;
-        objectiveValue = model.getObjValue();
-        gap = model.getMIPRelativeGap();
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(model.getObjValue());
+        solution.setGap(model.getMIPRelativeGap() * 100.0);
+        double[][] aSol = new double[n][m];
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < m; k++) {
+                aSol[i][k] = model.getValue(a[i][k]);
+            }
+        }
+        solution.setaSol(aSol);
+        double[][][][] xSol = new double[n][n][m][o];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < m; k++) {
+                    for (int omega = 0; omega < o; omega++) {
+                        xSol[i][j][k][omega] = model.getValue(x[i][j][k][omega]);
+                    }
+                }
+            }
+        }
+        solution.setxSol(xSol);
 
         model.clearModel();
     }
 
-    /**
-     * Get objective value
-     *
-     * @return objective value
-     */
-    public double getObjectiveValue() {
-        return objectiveValue;
-    }
-
-    /**
-     * Get runtime
-     *
-     * @return runtime
-     */
-    public double getRunTime() {
-        return runTime;
-    }
-
-    /**
-     * Get gap
-     *
-     * @return gap
-     */
-    public double getGap() {
-        return gap;
-    }
-
-    public String getName() {
-        return name;
+    public Solution getSolution() {
+        return solution;
     }
 }

@@ -12,6 +12,7 @@ public class DataSet {
     private Customer[] customers;
     private double[][] travelCosts;
     private int numberOfVehicles;
+    private String instance;
 
     public DataSet() {
 
@@ -159,5 +160,13 @@ public class DataSet {
      */
     public void setScenarioProbabilities(double[] scenarioProbabilities) {
         this.scenarioProbabilities = scenarioProbabilities;
+    }
+
+    public String getInstance() {
+        return instance;
+    }
+
+    public void setInstance(String instance) {
+        this.instance = instance;
     }
 }

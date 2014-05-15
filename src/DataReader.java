@@ -16,9 +16,11 @@ class DataReader {
 
         DataSet newData = new DataSet();
 
+        newData.setInstance(fileName);
+
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Instances/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;

@@ -8,17 +8,17 @@ import ilog.cplex.IloCplex;
 
 public class SolverClustering implements Solver {
 
-    private double objectiveValue, runTime, gap;
-    private String name;
+    private Solution solution;
 
     public SolverClustering() {
-        name = "Clustering";
+        solution = new Solution();
+        solution.setName("ClusteringRemy");
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
 
         // Get some data from dataset
-        int n = dataSet.getNumberOfCustomers();
+        int n = dataSet.getNumberOfCustomers() + 1;
         int m = dataSet.getNumberOfVehicles();
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
@@ -53,14 +53,12 @@ public class SolverClustering implements Solver {
         // Set objective
         IloLinearNumExpr expr = model.linearNumExpr();
         for (int j = 0; j < n; j++) {
-            expr.addTerm(c[0][j], y[j]);
+            expr.addTerm(2.0 * c[0][j], y[j]);
             for (int i = 1; i < n; i++) {
-                for (int k = 0; k < m; k++) {
-                    for (int omega = 0; omega < o; omega++) {
-                        expr.addTerm(p[omega] * c[i][j], z2[i][j][omega]);
-                        expr.addTerm(p[omega] * c[0][i], z[i][j]);
-                        expr.addTerm(-p[omega] * c[0][i], z2[i][j][omega]);
-                    }
+                for (int omega = 0; omega < o; omega++) {
+                    expr.addTerm(2.0 * p[omega] * c[i][j], z2[i][j][omega]);
+                    expr.addTerm(2.0 * p[omega] * c[0][i], z[i][j]);
+                    expr.addTerm(-2.0 * p[omega] * c[0][i], z2[i][j][omega]);
                 }
             }
         }
@@ -123,42 +121,24 @@ public class SolverClustering implements Solver {
         model.setOut(null);
         Long start = System.currentTimeMillis();
         model.solve();
-        runTime = (System.currentTimeMillis() - start) / 1000.0;
-        objectiveValue = model.getObjValue();
-        gap = model.getMIPRelativeGap();
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(model.getObjValue());
+        solution.setGap(model.getMIPRelativeGap());
+        double[][] zSol = new double[n][n];
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                zSol[i][j] = model.getValue(z[i][j]);
+            }
+        }
+
+        solution.setzSol(zSol);
 
         model.clearModel();
 
     }
 
-    /**
-     * Get objective value
-     *
-     * @return objective value
-     */
-    public double getObjectiveValue() {
-        return objectiveValue;
-    }
-
-    /**
-     * Get runtime
-     *
-     * @return runtime
-     */
-    public double getRunTime() {
-        return runTime;
-    }
-
-    /**
-     * Get gap
-     *
-     * @return gap
-     */
-    public double getGap() {
-        return gap;
-    }
-
-    public String getName() {
-        return name;
+    public Solution getSolution() {
+        return solution;
     }
 }

@@ -7,16 +7,16 @@ import ilog.concert.IloException;
 
 public class SolverGurobi implements Solver {
 
-    private double objectiveValue, runTime, gap;
-    private String name;
+    private Solution solution;
 
     public SolverGurobi() {
-        name = "Gurobi";
+        solution = new Solution();
+        solution.setName("Exact method (GUROBI)");
     }
 
     public void solve(DataSet dataSet) throws GRBException, IloException {
         // Get some data from dataset
-        int n = dataSet.getNumberOfCustomers();
+        int n = dataSet.getNumberOfCustomers() + 1;
         int m = dataSet.getNumberOfVehicles();
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
@@ -233,41 +233,15 @@ public class SolverGurobi implements Solver {
         // Optimize model
         Long start = System.currentTimeMillis();
         model.optimize();
-        runTime = (System.currentTimeMillis() - start) / 1000.0;
-        objectiveValue = model.get(GRB.DoubleAttr.ObjVal);
-        gap = model.get(GRB.DoubleAttr.MIPGap);
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(model.get(GRB.DoubleAttr.ObjVal));
+        solution.setGap(model.get(GRB.DoubleAttr.MIPGap) / 1000.0);
         model.dispose();
         env.dispose();
     }
 
-    /**
-     * Get objective value
-     *
-     * @return objective value
-     */
-    public double getObjectiveValue() {
-        return objectiveValue;
-    }
-
-    /**
-     * Get runtime
-     *
-     * @return runtime
-     */
-    public double getRunTime() {
-        return runTime;
-    }
-
-    /**
-     * Get gap
-     *
-     * @return gap
-     */
-    public double getGap() {
-        return gap;
-    }
-
-    public String getName() {
-        return name;
+    public Solution getSolution() {
+        return solution;
     }
 }

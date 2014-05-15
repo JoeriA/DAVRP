@@ -13,11 +13,10 @@ class DAVRP {
 
     public static void main(String[] args) {
 
-        window = new Window();
 
 //        Solver solver = new SolverGurobi();
-//        Solver solver = new SolverCplex();
-        Solver solver = new SolverClustering();
+        Solver solver = new SolverCplex();
+//        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 
         int start = 1;
@@ -25,23 +24,21 @@ class DAVRP {
 
         for (int i = start; i <= end; i++) {
             String instance = "DAVRPInstance" + i;
-            solve(instance, solver);
+            solveSilent(instance, solver);
         }
-
-        window.setTitle("DAVRP instance " + end);
 
     }
 
     private static void solve(String instance, Solver solver) {
         try {
+
+            Frame frame = new Frame();
             DataReader dataReader = new DataReader();
-            DataSet test = dataReader.readFile("Test Instances/" + instance);
+            DataSet test = dataReader.readFile(instance);
+            frame.createMap(test);
             solver.solve(test);
-            window.createMap(test);
-            System.out.println("Runtime: " + solver.getRunTime() + " seconds");
-            System.out.println("Objective value: " + solver.getObjectiveValue());
-            System.out.println("Gap: " + solver.getGap());
-            writeToFile(instance, solver);
+            frame.drawResults(solver.getSolution());
+            writeToFile(instance, solver.getSolution());
 
         } catch (GRBException e) {
             e.printStackTrace();
@@ -50,18 +47,33 @@ class DAVRP {
         }
     }
 
-    private static void writeToFile(String instance, Solver solver) {
+    private static void solveSilent(String instance, Solver solver) {
+        try {
+            System.out.println("Solving " + instance);
+            DataReader dataReader = new DataReader();
+            DataSet test = dataReader.readFile(instance);
+            solver.solve(test);
+            writeToFile(instance, solver.getSolution());
+
+        } catch (GRBException e) {
+            e.printStackTrace();
+        } catch (IloException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeToFile(String instance, Solution solution) {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Test Instances/" + instance + "_results_" + solver.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
 
-            line += "Runtime:\t" + solver.getRunTime();
-            line += "\r\nObjective value:\t" + solver.getObjectiveValue();
-            line += "\r\nGap:\t" + solver.getGap();
+            line += "Runtime:\t" + solution.getRunTime();
+            line += "\r\nObjective value:\t" + solution.getObjectiveValue();
+            line += "\r\nGap:\t" + solution.getGap();
 
             line += "\r\n";
             out.write(line);

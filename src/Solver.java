@@ -9,12 +9,6 @@ interface Solver {
 
     public void solve(DataSet dataSet) throws GRBException, IloException;
 
-    public double getObjectiveValue();
-
-    public double getRunTime();
-
-    public double getGap();
-
-    public String getName();
+    public Solution getSolution();
 
 }
