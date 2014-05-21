@@ -62,13 +62,14 @@ public class SolverCplex implements Solver {
                 }
             }
         }
+        double deviationCosts = 0.001 / (n * m * o);
         // Set objective
         IloLinearNumExpr expr = model.linearNumExpr();
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < m; k++) {
                 expr.addTerm(0.0, a[i][k]);
                 for (int omega = 0; omega < o; omega++) {
-                    expr.addTerm(0.0, d[i][k][omega]);
+                    expr.addTerm(deviationCosts, d[i][k][omega]);
                     for (int j = 0; j < n; j++) {
                         expr.addTerm(0.0, f[i][j][k][omega]);
                         expr.addTerm(p[omega] * c[i][j], x[i][j][k][omega]);
@@ -229,7 +230,7 @@ public class SolverCplex implements Solver {
             }
         }
         // Optimize model
-        model.setParam(IloCplex.DoubleParam.TiLim, 10.0);
+        model.setParam(IloCplex.DoubleParam.TiLim, 3000.0);
         model.setParam(IloCplex.DoubleParam.EpGap, 0.0001);
         Long start = System.currentTimeMillis();
         model.solve();

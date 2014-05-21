@@ -7,9 +7,27 @@ public class Customer {
     private double xCoordinate;
     private double yCoordinate;
     private int[] demandPerScenario;
+    private int demand;
+    private int route;
 
     public Customer(int id) {
         this.id = id;
+    }
+
+    public int getDemand() {
+        return demand;
+    }
+
+    public void setDemand(int demand) {
+        this.demand = demand;
+    }
+
+    public int getRoute() {
+        return route;
+    }
+
+    public void setRoute(int route) {
+        this.route = route;
     }
 
     /**

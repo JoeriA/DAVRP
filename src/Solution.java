@@ -9,9 +9,18 @@ public class Solution {
     private double[][] zSol;
     private double objectiveValue, runTime, gap;
     private String name;
+    private Route[] routes;
 
     public Solution() {
 
+    }
+
+    public Route[] getRoutes() {
+        return routes;
+    }
+
+    public void setRoutes(Route[] routes) {
+        this.routes = routes;
     }
 
     public double[][] getaSol() {

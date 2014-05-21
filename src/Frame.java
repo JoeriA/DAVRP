@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Random;
@@ -6,7 +8,7 @@ import java.util.Random;
 /**
  * Created by Joeri on 13-5-2014.
  */
-public class Frame extends JFrame {
+public class Frame extends JFrame implements ChangeListener {
 
     private JPanel mainPanel;
     private JLabel mapLabel;
@@ -45,6 +47,8 @@ public class Frame extends JFrame {
         g2d.fillRect(0, 0, imgDim.width, imgDim.height);
 
         setVisible(true);
+
+        spinner1.addChangeListener(this);
     }
 
     /**
@@ -98,6 +102,11 @@ public class Frame extends JFrame {
         mainPanel.repaint();
     }
 
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        drawScenario((Integer) spinner1.getValue() - 1);
+    }
+
     public void drawResults(Solution solution) {
         this.solution = solution;
 
@@ -117,14 +126,12 @@ public class Frame extends JFrame {
         // Print all customers assigned to the same driver with the same color
         drawAssignments();
 
-        if (solution.getxSol() != null) {
-            // TODO add actionlistener
-//            drawScenario(1);
-        }
+        drawScenario(0);
     }
 
     private void drawAssignments() {
 
+        // TODO check if assignments are made with boolean
         // Create image
         assignmentsImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = assignmentsImg.createGraphics();
@@ -194,45 +201,49 @@ public class Frame extends JFrame {
 
     private void drawScenario(int scenario) {
 
-        // Create image
-        routesImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = routesImg.createGraphics();
-        g2d.setColor(Color.darkGray);
+        // TODO add method to draw clarke-wright
 
-        double[][][][] x = solution.getxSol();
+        if (solution.getxSol() != null) {
+            // Create image
+            routesImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = routesImg.createGraphics();
+            g2d.setColor(Color.darkGray);
 
-        int n = dataSet.getNumberOfCustomers() + 1;
-        int m = dataSet.getNumberOfVehicles();
+            double[][][][] x = solution.getxSol();
 
-        Customer[] customers = dataSet.getCustomers();
+            int n = dataSet.getNumberOfCustomers() + 1;
+            int m = dataSet.getNumberOfVehicles();
 
-        int x1, x2, y1, y2;
+            Customer[] customers = dataSet.getCustomers();
 
-        // Add lines on driven routesImg
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                for (int k = 0; k < m; k++) {
-                    if (x[i][j][k][scenario] == 1) {
-                        x1 = transformX(customers[i].getxCoordinate());
-                        x2 = transformX(customers[j].getxCoordinate());
-                        y1 = transformY(customers[i].getyCoordinate());
-                        y2 = transformY(customers[j].getyCoordinate());
-                        g2d.drawLine(x1, y1, x2, y2);
+            int x1, x2, y1, y2;
+
+            // Add lines on driven routesImg
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    for (int k = 0; k < m; k++) {
+                        if (x[i][j][k][scenario] == 1) {
+                            x1 = transformX(customers[i].getxCoordinate());
+                            x2 = transformX(customers[j].getxCoordinate());
+                            y1 = transformY(customers[i].getyCoordinate());
+                            y2 = transformY(customers[j].getyCoordinate());
+                            g2d.drawLine(x1, y1, x2, y2);
+                        }
                     }
                 }
             }
-        }
 
-        // Repaint the map on screen with assignments and routes
-        // First combine map, assignments and routes, than repaint
-        BufferedImage combined = new BufferedImage((int) imgDim.getWidth(), (int) imgDim.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = combined.getGraphics();
-        g.drawImage(mapImg, 0, 0, null);
-        g.drawImage(assignmentsImg, 0, 0, null);
-        g.drawImage(routesImg, 0, 0, null);
-        ImageIcon icon = new ImageIcon(combined);
-        mapLabel.setIcon(icon);
-        mainPanel.repaint();
+            // Repaint the map on screen with assignments and routes
+            // First combine map, assignments and routes, than repaint
+            BufferedImage combined = new BufferedImage((int) imgDim.getWidth(), (int) imgDim.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics g = combined.getGraphics();
+            g.drawImage(mapImg, 0, 0, null);
+            g.drawImage(assignmentsImg, 0, 0, null);
+            g.drawImage(routesImg, 0, 0, null);
+            ImageIcon icon = new ImageIcon(combined);
+            mapLabel.setIcon(icon);
+            mainPanel.repaint();
+        }
     }
 
     /**

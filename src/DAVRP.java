@@ -15,9 +15,10 @@ class DAVRP {
 
 
 //        Solver solver = new SolverGurobi();
-        Solver solver = new SolverCplex();
+//        Solver solver = new SolverCplex();
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
+        Solver solver = new ClarkeWright();
 
         int start = 1;
         int end = 1;
