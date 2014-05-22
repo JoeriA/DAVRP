@@ -1,5 +1,7 @@
 /**
  * Created by Joeri on 24-4-2014.
+ *
+ * Class for solving the DAVRP exactly with Gurobi
  */
 
 import gurobi.*;
@@ -7,14 +9,21 @@ import ilog.concert.IloException;
 
 public class SolverGurobi implements Solver {
 
-    private Solution solution;
-
     public SolverGurobi() {
-        solution = new Solution();
-        solution.setName("Exact method (GUROBI)");
+
     }
 
-    public void solve(DataSet dataSet) throws GRBException, IloException {
+    /**
+     * Solve a problem with this solver
+     *
+     * @param dataSet data set containing information about problem instance
+     * @return the solution of the solver
+     * @throws GRBException error when Gurobi cannot solve
+     * @throws IloException error when CPlex cannot solve
+     */
+    public Solution solve(DataSet dataSet) throws GRBException, IloException {
+        Solution solution = new Solution();
+        solution.setName("Exact method (GUROBI)");
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers() + 1;
         int m = dataSet.getNumberOfVehicles();
@@ -239,9 +248,7 @@ public class SolverGurobi implements Solver {
         solution.setGap(model.get(GRB.DoubleAttr.MIPGap) / 1000.0);
         model.dispose();
         env.dispose();
-    }
 
-    public Solution getSolution() {
         return solution;
     }
 }

@@ -1,5 +1,7 @@
 /**
  * Created by Joeri on 25-4-2014.
+ *
+ * Class for solving the DAVRP exactly with CPlex
  */
 
 import gurobi.GRBException;
@@ -8,14 +10,25 @@ import ilog.cplex.IloCplex;
 
 public class SolverCplex implements Solver {
 
-    private Solution solution;
-
+    /**
+     * Create the exact solver with cplex
+     */
     public SolverCplex() {
-        solution = new Solution();
-        solution.setName("Exact method (CPLEX)");
+
     }
 
-    public void solve(DataSet dataSet) throws GRBException, IloException {
+    /**
+     * Solve a problem with this solver
+     *
+     * @param dataSet data set containing information about problem instance
+     * @return the solution of the solver
+     * @throws GRBException error when Gurobi cannot solve
+     * @throws IloException error when CPlex cannot solve
+     */
+    public Solution solve(DataSet dataSet) throws GRBException, IloException {
+        Solution solution = new Solution();
+        solution.setName("Exact method (CPLEX)");
+
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers() + 1;
         int m = dataSet.getNumberOfVehicles();
@@ -258,9 +271,7 @@ public class SolverCplex implements Solver {
         solution.setxSol(xSol);
 
         model.clearModel();
-    }
 
-    public Solution getSolution() {
         return solution;
     }
 }

@@ -1,42 +1,57 @@
 /**
  * Created by Joeri on 19-5-2014.
+ * <p/>
+ * Class for savings (for Clarke-Wright heuristic)
  */
 public class Saving implements Comparable<Saving> {
 
     private Customer i, j;
     private double saving;
 
+    /**
+     * Create a saving
+     *
+     * @param saving the saving in objective value that can be made
+     * @param i      customer 1 affected by the saving
+     * @param j      customer 2 affected by the saving
+     */
     public Saving(double saving, Customer i, Customer j) {
         this.i = i;
         this.j = j;
         this.saving = saving;
     }
 
+    /**
+     * Get the first customer affected by the saving
+     *
+     * @return the first customer affected by the saving
+     */
     public Customer getI() {
         return i;
     }
 
-    public void setI(Customer i) {
-        this.i = i;
-    }
-
+    /**
+     * Get the first customer affected by the saving
+     *
+     * @return the second customer affected by the saving
+     */
     public Customer getJ() {
         return j;
     }
 
-    public void setJ(Customer j) {
-        this.j = j;
-    }
-
+    /**
+     * Get the improvement in objective value when applying this saving
+     *
+     * @return the improvement in objective value when applying this saving
+     */
     public double getSaving() {
         return saving;
     }
 
-    public void setSaving(double saving) {
-        this.saving = saving;
-    }
-
     @Override
+    /**
+     * Custom compareTo to sort the savings on the value of the saving
+     */
     public int compareTo(Saving o) {
         if (o.getSaving() < this.saving) {
             return -1;

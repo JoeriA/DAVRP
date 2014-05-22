@@ -7,6 +7,7 @@ import java.util.Random;
 
 /**
  * Created by Joeri on 13-5-2014.
+ * Creating windows interface
  */
 public class Frame extends JFrame implements ChangeListener {
 
@@ -19,18 +20,20 @@ public class Frame extends JFrame implements ChangeListener {
     private JTextArea solverTextArea;
     private JTextArea programStatusTextArea;
 
-    private Dimension imgDim, screenSize, mapDim;
-    private BufferedImage mapImg, assignmentsImg, routesImg;
+    private Dimension imgDim;
+    private Dimension mapDim;
+    private BufferedImage mapImg;
+    private BufferedImage assignmentsImg;
     private DataSet dataSet;
     private Solution solution;
 
     public Frame() {
         setContentPane(mainPanel);
         setExtendedState(Window.MAXIMIZED_BOTH);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         // Calculate dimensions
-        screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int dimensionSize = Math.min((int) screenSize.getHeight() - 80, (int) screenSize.getWidth() - 10);
         imgDim = new Dimension(dimensionSize, dimensionSize);
         mapDim = new Dimension(5, 5);
@@ -131,7 +134,6 @@ public class Frame extends JFrame implements ChangeListener {
 
     private void drawAssignments() {
 
-        // TODO check if assignments are made with boolean
         // Create image
         assignmentsImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = assignmentsImg.createGraphics();
@@ -154,7 +156,7 @@ public class Frame extends JFrame implements ChangeListener {
             m = dataSet.getNumberOfVehicles();
         }
 
-        if (z != null) {
+        if (clusters || drivers) {
 
             int n = dataSet.getNumberOfCustomers() + 1;
 
@@ -180,7 +182,7 @@ public class Frame extends JFrame implements ChangeListener {
                             g2d.drawLine(x1, y1, x2, y2);
                             g2d.fillOval(x2 - (int) (size / 2.0), y2 - (int) (size / 2.0), size, size);
                             // If it is done exactly, color customer locations
-                        } else if (drivers) {
+                        } else {
                             g2d.fillOval(x1 - (int) (size / 2.0), y1 - (int) (size / 2.0), size, size);
                         }
                     }
@@ -201,7 +203,39 @@ public class Frame extends JFrame implements ChangeListener {
 
     private void drawScenario(int scenario) {
 
-        // TODO add method to draw clarke-wright
+        BufferedImage routesImg;
+        if (solution.getRoutes() != null) {
+            // Create image
+            routesImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = routesImg.createGraphics();
+            g2d.setColor(Color.darkGray);
+
+            int x1, x2, y1, y2;
+
+            // Add lines on driven routesImg
+            for (Route r : solution.getRoutes()) {
+                if (r != null) {
+                    for (Edge e : r.getEdges()) {
+                        x1 = transformX(e.getFrom().getxCoordinate());
+                        y1 = transformY(e.getFrom().getyCoordinate());
+                        x2 = transformX(e.getTo().getxCoordinate());
+                        y2 = transformY(e.getTo().getyCoordinate());
+                        g2d.drawLine(x1, y1, x2, y2);
+                    }
+                }
+            }
+
+            // Repaint the map on screen with assignments and routes
+            // First combine map, assignments and routes, than repaint
+            BufferedImage combined = new BufferedImage((int) imgDim.getWidth(), (int) imgDim.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics g = combined.getGraphics();
+            g.drawImage(mapImg, 0, 0, null);
+            g.drawImage(assignmentsImg, 0, 0, null);
+            g.drawImage(routesImg, 0, 0, null);
+            ImageIcon icon = new ImageIcon(combined);
+            mapLabel.setIcon(icon);
+            mainPanel.repaint();
+        }
 
         if (solution.getxSol() != null) {
             // Create image

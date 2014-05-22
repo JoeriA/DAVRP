@@ -2,10 +2,11 @@ import java.util.ArrayList;
 
 /**
  * Created by Joeri on 19-5-2014.
+ * <p/>
+ * Class for storing all info of a route
  */
 public class Route {
 
-    private boolean allowed;
     private double costs;
     private int weight;
     private Edge[] inEdges;
@@ -14,16 +15,27 @@ public class Route {
     private ArrayList<Edge> edges;
     private int routeNumber;
 
+    /**
+     * Create an empty route
+     *
+     * @param nrOfNodes   number of customers in total (plus depot)
+     * @param routeNumber number of this route
+     */
     public Route(int nrOfNodes, int routeNumber) {
 
         this.inEdges = new Edge[nrOfNodes];
         this.outEdges = new Edge[nrOfNodes];
         this.customers = new Customer[nrOfNodes];
-        this.edges = new ArrayList();
+        this.edges = new ArrayList<Edge>();
         this.routeNumber = routeNumber;
 
     }
 
+    /**
+     * Add an edge to this route
+     *
+     * @param e edge to be added
+     */
     public void addEdge(Edge e) {
         // Add in and out edges
         inEdges[e.getTo().getId()] = e;
@@ -46,33 +58,77 @@ public class Route {
         costs += e.getDistance();
     }
 
+    /**
+     * Remove an edge from this route
+     *
+     * @param e edge to be removed
+     */
     public void removeEdge(Edge e) {
         // Check whether edge does exist
-        if (!inEdges[e.getTo().getId()].equals(e) || !outEdges[e.getFrom().getId()].equals(e)) {
-            // TODO check if .equals is correct
-            System.out.println("Edge to remove does not exist");
-        } else {
-            // Remove edge from lists
-            inEdges[e.getTo().getId()] = null;
-            outEdges[e.getFrom().getId()] = null;
-            edges.remove(e);
-
-            // Check if customers in edge also need to be removed
-            if (inEdges[e.getTo().getId()] == null && outEdges[e.getTo().getId()] == null) {
-                customers[e.getTo().getId()] = null;
-                weight -= e.getTo().getDemand();
-            }
-            if (inEdges[e.getFrom().getId()] == null && outEdges[e.getFrom().getId()] == null) {
-                customers[e.getFrom().getId()] = null;
-                weight -= e.getFrom().getDemand();
-            }
-
-            // Remove costs of edge
-            costs -= e.getDistance();
+        if (!edges.contains(e)) {
+            System.out.println("Edge does not exist");
         }
+
+        // Remove edge from lists
+        inEdges[e.getTo().getId()] = null;
+        outEdges[e.getFrom().getId()] = null;
+        edges.remove(e);
+
+        // Check if customers in edge also need to be removed
+        if (inEdges[e.getTo().getId()] == null && outEdges[e.getTo().getId()] == null) {
+            customers[e.getTo().getId()] = null;
+            weight -= e.getTo().getDemand();
+        }
+        if (inEdges[e.getFrom().getId()] == null && outEdges[e.getFrom().getId()] == null) {
+            customers[e.getFrom().getId()] = null;
+            weight -= e.getFrom().getDemand();
+        }
+
+        // Remove costs of edge
+        costs -= e.getDistance();
+
     }
 
-    public boolean merge(Route other, Saving saving) {
+    /**
+     * Remove edge between two customers from this route
+     *
+     * @param i customer where the edge starts
+     * @param j customer where the edge ends
+     */
+    public void removeEdge(Customer i, Customer j) {
+        // Check whether edge does exist
+        if (inEdges[j.getId()] == null || !inEdges[j.getId()].equals(outEdges[i.getId()])) {
+            System.out.println("Edge does not exist");
+        }
+
+        // Remove costs of edge
+        costs -= inEdges[j.getId()].getDistance();
+
+        // Remove edge from lists
+        edges.remove(inEdges[j.getId()]);
+        inEdges[j.getId()] = null;
+        outEdges[i.getId()] = null;
+
+        // Check if customers in edge also need to be removed
+        if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
+            customers[j.getId()] = null;
+            weight -= j.getDemand();
+        }
+        if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
+            customers[i.getId()] = null;
+            weight -= i.getDemand();
+        }
+
+    }
+
+    /**
+     * Merge two routes with maximal saving
+     *
+     * @param other  the other route to merge with this one
+     * @param saving the saving that can be made by merging
+     * @return true if merge is successful, false if no merge is possible with this saving
+     */
+    public boolean merge(Route other, Saving saving, double[][] c) {
 
         Customer customerI = saving.getI();
         Customer customerJ = saving.getJ();
@@ -80,26 +136,26 @@ public class Route {
         // Only merge when depot is between the customers
         if (beforeDepot(customerI) && other.afterDepot(customerJ)) {
             // Remove edges from/to depot
-            removeEdge(new Edge(customerI, customers[0]));
-            other.removeEdge(new Edge(customers[0], customerJ));
+            removeEdge(customerI, customers[0]);
+            other.removeEdge(customers[0], customerJ);
             // Add all other edges from second route into this one
             for (Edge e : other.getEdges()) {
                 addEdge(e);
             }
             // Add new edge from saving
-            addEdge(new Edge(customerI, customerJ));
+            addEdge(new Edge(customerI, customerJ, c[customerI.getId()][customerJ.getId()]));
 
             return true;
         } else if (afterDepot(customerI) && other.beforeDepot(customerJ)) {
             // Remove edges from/to depot
-            removeEdge(new Edge(customerI, customers[0]));
-            other.removeEdge(new Edge(customers[0], customerJ));
+            removeEdge(customers[0], customerI);
+            other.removeEdge(customerJ, customers[0]);
             // Add all other edges from second route into this one
             for (Edge e : other.getEdges()) {
                 addEdge(e);
             }
             // Add new edge from saving
-            addEdge(new Edge(customerJ, customerI));
+            addEdge(new Edge(customerJ, customerI, c[customerJ.getId()][customerI.getId()]));
 
             return true;
         } else {
@@ -114,11 +170,7 @@ public class Route {
      * @return true if customer after depot in the route, false otherwise
      */
     public boolean afterDepot(Customer c) {
-        if (inEdges[c.getId()].getFrom().getId() == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return inEdges[c.getId()].getFrom().getId() == 0;
     }
 
     /**
@@ -128,11 +180,7 @@ public class Route {
      * @return true if customer before depot in the route, false otherwise
      */
     public boolean beforeDepot(Customer c) {
-        if (outEdges[c.getId()].getTo().getId() == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return outEdges[c.getId()].getTo().getId() == 0;
     }
 
     /**

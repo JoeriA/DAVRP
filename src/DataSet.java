@@ -1,5 +1,7 @@
 /**
  * Created by Joeri on 16-4-2014.
+ * <p/>
+ * Class for storing data about problem instance
  */
 
 public class DataSet {
@@ -14,6 +16,9 @@ public class DataSet {
     private int numberOfVehicles;
     private String instance;
 
+    /**
+     * Create empty dataset
+     */
     public DataSet() {
 
     }
@@ -73,18 +78,18 @@ public class DataSet {
     }
 
     /**
-     * Get number of customers
+     * Get number of customers (without depot)
      *
-     * @return number of customers
+     * @return number of customers (without depot)
      */
     public int getNumberOfCustomers() {
         return numberOfCustomers;
     }
 
     /**
-     * Set number of customers
+     * Set number of customers (without depot)
      *
-     * @param numberOfCustomers number of customers
+     * @param numberOfCustomers number of customers (without depot)
      */
     public void setNumberOfCustomers(int numberOfCustomers) {
         this.numberOfCustomers = numberOfCustomers;

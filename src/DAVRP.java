@@ -6,10 +6,10 @@ import java.io.FileWriter;
 
 /**
  * Created by Joeri on 11-4-2014.
+ *
+ * Main file for the DAVRP problem solver
  */
 class DAVRP {
-
-    private static Window window;
 
     public static void main(String[] args) {
 
@@ -21,7 +21,7 @@ class DAVRP {
         Solver solver = new ClarkeWright();
 
         int start = 1;
-        int end = 1;
+        int end = 65;
 
         for (int i = start; i <= end; i++) {
             String instance = "DAVRPInstance" + i;
@@ -37,9 +37,9 @@ class DAVRP {
             DataReader dataReader = new DataReader();
             DataSet test = dataReader.readFile(instance);
             frame.createMap(test);
-            solver.solve(test);
-            frame.drawResults(solver.getSolution());
-            writeToFile(instance, solver.getSolution());
+            Solution solution = solver.solve(test);
+            frame.drawResults(solution);
+            writeToFile(instance, solution);
 
         } catch (GRBException e) {
             e.printStackTrace();
@@ -53,8 +53,8 @@ class DAVRP {
             System.out.println("Solving " + instance);
             DataReader dataReader = new DataReader();
             DataSet test = dataReader.readFile(instance);
-            solver.solve(test);
-            writeToFile(instance, solver.getSolution());
+            Solution solution = solver.solve(test);
+            writeToFile(instance, solution);
 
         } catch (GRBException e) {
             e.printStackTrace();

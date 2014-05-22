@@ -5,13 +5,23 @@ import java.io.IOException;
 
 /**
  * Created by Joeri on 16-4-2014.
+ * Class for reading an input file
  */
 class DataReader {
 
+    /**
+     * Create datareader
+     */
     public DataReader() {
 
     }
 
+    /**
+     * Create dataset from file defined in filename
+     *
+     * @param fileName string with file location and name
+     * @return dataset from file
+     */
     public DataSet readFile(String fileName) {
 
         DataSet newData = new DataSet();

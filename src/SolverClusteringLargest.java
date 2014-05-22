@@ -4,27 +4,35 @@ import ilog.cplex.IloCplex;
 
 /**
  * Created by Joeri on 7-5-2014.
+ * <p/>
+ * Implementation of clustering algorithm, based on only the largest demands
  */
 
 public class SolverClusteringLargest implements Solver {
 
-    private Solution solution;
-
     public SolverClusteringLargest() {
-        solution = new Solution();
-        solution.setName("ClusteringLargest");
+
     }
 
-    public void solve(DataSet dataSet) throws GRBException, IloException {
+    /**
+     * Solve a problem with this solver
+     *
+     * @param dataSet data set containing information about problem instance
+     * @return the solution of the solver
+     * @throws GRBException error when Gurobi cannot solve
+     * @throws IloException error when CPlex cannot solve
+     */
+    public Solution solve(DataSet dataSet) throws GRBException, IloException {
+
+        Solution solution = new Solution();
+        solution.setName("ClusteringLargest");
 
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers() + 1;
-        int m = dataSet.getNumberOfVehicles();
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
         Customer[] customers = dataSet.getCustomers();
         double[][] c = dataSet.getTravelCosts();
-        double alpha = dataSet.getAlpha();
 
         // Get largest demands
         int[] demands = new int[n];
@@ -112,9 +120,6 @@ public class SolverClusteringLargest implements Solver {
 
         model.clearModel();
 
-    }
-
-    public Solution getSolution() {
         return solution;
     }
 }
