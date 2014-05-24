@@ -49,8 +49,6 @@ public class Frame extends JFrame implements ChangeListener {
         g2d.setBackground(Color.white);
         g2d.fillRect(0, 0, imgDim.width, imgDim.height);
 
-        setVisible(true);
-
         spinner1.addChangeListener(this);
     }
 
@@ -63,6 +61,8 @@ public class Frame extends JFrame implements ChangeListener {
 
         // Make dataset global
         this.dataSet = dataSet;
+
+        setVisible(true);
 
         // Add title to window
         setTitle(dataSet.getInstance());
@@ -113,6 +113,8 @@ public class Frame extends JFrame implements ChangeListener {
     public void drawResults(Solution solution) {
         this.solution = solution;
 
+        setVisible(true);
+
         // Add subtitle
         subTitleLabel.setText("Solved with " + solution.getName());
 
@@ -133,6 +135,8 @@ public class Frame extends JFrame implements ChangeListener {
     }
 
     private void drawAssignments() {
+
+        setVisible(true);
 
         // Create image
         assignmentsImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
@@ -202,6 +206,8 @@ public class Frame extends JFrame implements ChangeListener {
     }
 
     private void drawScenario(int scenario) {
+
+        setVisible(true);
 
         BufferedImage routesImg;
         if (solution.getRoutes() != null) {

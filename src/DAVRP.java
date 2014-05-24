@@ -21,53 +21,83 @@ class DAVRP {
         Solver solver = new ClarkeWright();
 
         int start = 1;
-        int end = 65;
+        int end = 125;
+
+        boolean silent = true;
+
+        DataReader dataReader = new DataReader();
+        DataSet dataSet;
 
         for (int i = start; i <= end; i++) {
-            String instance = "DAVRPInstance" + i;
-            solveSilent(instance, solver);
+            if (i <= 65) {
+                String instance = "DAVRPInstance" + i;
+                try {
+                    System.out.println("Solving " + instance);
+                    Frame frame = new Frame();
+                    dataSet = dataReader.readFile(instance);
+                    if (!silent) {
+                        frame.createMap(dataSet);
+                    }
+                    Solution solution = solver.solve(dataSet);
+                    if (!silent) {
+                        frame.drawResults(solution);
+                    }
+                    writeToFile(instance, solution);
+                } catch (GRBException e) {
+                    e.printStackTrace();
+                } catch (IloException e) {
+                    e.printStackTrace();
+                }
+            } else if (i <= 95 || i >= 106) {
+                for (int j = 1; j <= 3; j++) {
+                    String instance = "DAVRPInstance" + i + "_" + j;
+                    try {
+                        System.out.println("Solving " + instance);
+                        Frame frame = new Frame();
+                        dataSet = dataReader.readFile(instance);
+                        if (!silent) {
+                            frame.createMap(dataSet);
+                        }
+                        Solution solution = solver.solve(dataSet);
+                        if (!silent) {
+                            frame.drawResults(solution);
+                        }
+                        writeToFile(instance, solution);
+                    } catch (GRBException e) {
+                        e.printStackTrace();
+                    } catch (IloException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                String instance = "DAVRPInstance" + i + "_1";
+                try {
+                    System.out.println("Solving " + instance);
+                    Frame frame = new Frame();
+                    dataSet = dataReader.readFile(instance);
+                    if (!silent) {
+                        frame.createMap(dataSet);
+                    }
+                    Solution solution = solver.solve(dataSet);
+                    if (!silent) {
+                        frame.drawResults(solution);
+                    }
+                    writeToFile(instance, solution);
+                } catch (GRBException e) {
+                    e.printStackTrace();
+                } catch (IloException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
-    }
-
-    private static void solve(String instance, Solver solver) {
-        try {
-
-            Frame frame = new Frame();
-            DataReader dataReader = new DataReader();
-            DataSet test = dataReader.readFile(instance);
-            frame.createMap(test);
-            Solution solution = solver.solve(test);
-            frame.drawResults(solution);
-            writeToFile(instance, solution);
-
-        } catch (GRBException e) {
-            e.printStackTrace();
-        } catch (IloException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void solveSilent(String instance, Solver solver) {
-        try {
-            System.out.println("Solving " + instance);
-            DataReader dataReader = new DataReader();
-            DataSet test = dataReader.readFile(instance);
-            Solution solution = solver.solve(test);
-            writeToFile(instance, solution);
-
-        } catch (GRBException e) {
-            e.printStackTrace();
-        } catch (IloException e) {
-            e.printStackTrace();
-        }
     }
 
     private static void writeToFile(String instance, Solution solution) {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
