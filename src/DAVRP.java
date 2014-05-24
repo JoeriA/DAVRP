@@ -16,10 +16,11 @@ class DAVRP {
 
 //        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
-        Solver solver = new SolverCplexLargest();
+//        Solver solver = new SolverCplexLargest();
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
+        Solver solver = new RecordToRecord();
 
         int start = 1;
         int end = 15;
@@ -98,7 +99,7 @@ class DAVRP {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";

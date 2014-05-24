@@ -7,11 +7,24 @@ import java.util.Collections;
  */
 public class ClarkeWright implements Solver {
 
+    // Parameter
+    double lambda;
+
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
      */
     public ClarkeWright() {
 
+        lambda = 1.0;
+    }
+
+    /**
+     * Set lambda parameter
+     *
+     * @param lambda lambda parameter
+     */
+    public void setLambda(double lambda) {
+        this.lambda = lambda;
     }
 
     /**
@@ -119,7 +132,7 @@ public class ClarkeWright implements Solver {
         ArrayList<Saving> savingsList = new ArrayList<Saving>();
         for (int i = 1; i < customers.length; i++) {
             for (int j = i + 1; j < customers.length; j++) {
-                savingsList.add(new Saving(c[0][i] + c[j][0] - c[i][j], customers[i], customers[j]));
+                savingsList.add(new Saving(c[0][i] + c[j][0] - lambda * c[i][j], customers[i], customers[j]));
             }
         }
 

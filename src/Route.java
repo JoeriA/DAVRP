@@ -163,6 +163,14 @@ public class Route {
         }
     }
 
+    public Edge getEdgeFrom(Customer i) {
+        return outEdges[i.getId()];
+    }
+
+    public Edge getEdgeTo(Customer j) {
+        return inEdges[j.getId()];
+    }
+
     /**
      * Check whether customer is after depot in the route
      *
