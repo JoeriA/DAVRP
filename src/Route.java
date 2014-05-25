@@ -41,17 +41,18 @@ public class Route {
         inEdges[e.getTo().getId()] = e;
         outEdges[e.getFrom().getId()] = e;
         edges.add(e);
+        e.setRoute(routeNumber);
 
         // Check if customers in edge need to be added
         if (customers[e.getTo().getId()] == null) {
             customers[e.getTo().getId()] = e.getTo();
             weight += e.getTo().getDemand();
-            customers[e.getTo().getId()].setRoute(routeNumber);
+            e.getTo().setRoute(routeNumber);
         }
         if (customers[e.getFrom().getId()] == null) {
             customers[e.getFrom().getId()] = e.getFrom();
             weight += e.getFrom().getDemand();
-            customers[e.getFrom().getId()].setRoute(routeNumber);
+            e.getFrom().setRoute(routeNumber);
         }
 
         // Add costs
@@ -122,6 +123,76 @@ public class Route {
     }
 
     /**
+     * Remove edge between two customers from this route
+     *
+     * @param j customer where the edge ends
+     */
+    public void removeEdgeTo(Customer j) {
+        // Check whether edge does exist
+        if (inEdges[j.getId()] == null) {
+            System.out.println("Edge does not exist");
+        }
+
+        Edge e = inEdges[j.getId()];
+        Customer i = e.getFrom();
+
+
+        // Remove costs of edge
+        costs -= e.getDistance();
+
+        // Remove edge from lists
+        edges.remove(e);
+        inEdges[j.getId()] = null;
+        outEdges[i.getId()] = null;
+
+        // Check if customers in edge also need to be removed
+        if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
+            customers[j.getId()] = null;
+            weight -= j.getDemand();
+        }
+        if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
+            customers[i.getId()] = null;
+            weight -= i.getDemand();
+        }
+
+    }
+
+    /**
+     * Remove edge between two customers from this route
+     *
+     * @param i customer where the edge begins
+     */
+    public void removeEdgeFrom(Customer i) {
+        // Check whether edge does exist
+        if (outEdges[i.getId()] == null) {
+            System.out.println("Edge does not exist");
+        }
+
+        Edge e = outEdges[i.getId()];
+        Customer j = e.getTo();
+
+
+        // Remove costs of edge
+        costs -= e.getDistance();
+
+        // Remove edge from lists
+        edges.remove(e);
+        inEdges[j.getId()] = null;
+        outEdges[i.getId()] = null;
+
+        // Check if customers in edge also need to be removed
+        if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
+            customers[j.getId()] = null;
+            weight -= j.getDemand();
+        }
+        if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
+            customers[i.getId()] = null;
+            weight -= i.getDemand();
+        }
+
+    }
+
+    /**
      * Merge two routes with maximal saving
      *
      * @param other  the other route to merge with this one
@@ -153,6 +224,7 @@ public class Route {
             // Add all other edges from second route into this one
             for (Edge e : other.getEdges()) {
                 addEdge(e);
+                e.setRoute(routeNumber);
             }
             // Add new edge from saving
             addEdge(new Edge(customerJ, customerI, c[customerJ.getId()][customerI.getId()]));

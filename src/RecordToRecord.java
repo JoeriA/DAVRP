@@ -1,12 +1,9 @@
-import java.util.ArrayList;
-
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation Clarke Wright heuristic
  */
 public class RecordToRecord implements Solver {
 
-    private ArrayList<Edge> edges;
     private Route[] routes;
     private double record;
     private double deviation;
@@ -15,7 +12,7 @@ public class RecordToRecord implements Solver {
      * Implementation of Clarke-Wright heuristic for the DAVRP
      */
     public RecordToRecord() {
-        edges = new ArrayList<Edge>();
+
     }
 
     /**
@@ -36,7 +33,7 @@ public class RecordToRecord implements Solver {
         int n = dataSet.getNumberOfCustomers() + 1;
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
-        double[][] c = dataSet.getTravelCosts();
+        //double[][] c = dataSet.getTravelCosts();
         Customer[] customers = dataSet.getCustomers();
 
         // Get largest demands
@@ -69,20 +66,14 @@ public class RecordToRecord implements Solver {
         record = cwSolution.getObjectiveValue();
         deviation = 0.01 * record;
 
-        for (Route r : routes) {
-            if (r != null) {
-                for (Edge e : r.getEdges()) {
-                    edges.add(e);
-                }
-            }
-        }
-
         double tourLength = record;
 
         // Start improvement iterations
         for (int k = 0; k < K; k++) {
             for (Customer i : customers) {
-                tourLength = findOnePointMove(i, tourLength);
+                if (i.getId() != 0) {
+                    tourLength = findOnePointMove(i, tourLength, Q);
+                }
             }
         }
 
@@ -102,29 +93,32 @@ public class RecordToRecord implements Solver {
         return solution;
     }
 
-    private double findOnePointMove(Customer i, double tourLength) {
-        double saving = 0.0;
-        double largestSaving = Double.MIN_VALUE;
+    private double findOnePointMove(Customer i, double tourLength, int Q) {
+        double saving;
+        double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
-        Route iRoute = routes[i.getId()];
+        Route iRoute = routes[i.getRoute()];
         for (Route r : routes) {
-            for (Edge e : r.getEdges()) {
-                // Only if customer i is not already in edge e
-                if (e.getFrom().getId() != i.getId() && e.getTo().getId() != i.getId()) {
-                    // Remove customer i from its current route
-                    saving += iRoute.getEdgeTo(i).getDistance();
-                    saving += iRoute.getEdgeFrom(i).getDistance();
-                    saving -= iRoute.getEdgeTo(i).getFrom().getDistance(iRoute.getEdgeFrom(i).getTo());
-                    // Insert customer i in edge e
-                    saving += e.getDistance();
-                    saving -= i.getDistance(e.getFrom());
-                    saving -= i.getDistance(e.getTo());
-                    if (saving > 0.0) {
-                        onePointMove(i, e);
-                        return tourLength - saving;
-                    } else if (saving > largestSaving) {
-                        largestSaving = saving;
-                        largestSavingEdge = e;
+            if (r != null) {
+                for (Edge e : r.getEdges()) {
+                    // Only if customer i is not already in edge e and new tour is allowed
+                    if (e.getFrom().getId() != i.getId() && e.getTo().getId() != i.getId() && i.getDemand() + r.getWeight() <= Q) {
+                        saving = 0.0;
+                        // Remove customer i from its current route
+                        saving += iRoute.getEdgeTo(i).getDistance();
+                        saving += iRoute.getEdgeFrom(i).getDistance();
+                        saving -= iRoute.getEdgeTo(i).getFrom().getDistance(iRoute.getEdgeFrom(i).getTo());
+                        // Insert customer i in edge e
+                        saving += e.getDistance();
+                        saving -= i.getDistance(e.getFrom());
+                        saving -= i.getDistance(e.getTo());
+                        if (saving >= 0.0) {
+                            onePointMove(i, e);
+                            return tourLength - saving;
+                        } else if (saving > largestSaving) {
+                            largestSaving = saving;
+                            largestSavingEdge = e;
+                        }
                     }
                 }
             }
@@ -137,16 +131,40 @@ public class RecordToRecord implements Solver {
     }
 
     private void onePointMove(Customer i, Edge e) {
-        Route iRoute = routes[i.getId()];
-        Route r = routes[e.getTo().getRoute()];
+        Route iRoute = routes[i.getRoute()];
+        Route r = routes[e.getRoute()];
+        Customer to, from;
         // Remove customer i from its current route
-        iRoute.removeEdge(iRoute.getEdgeTo(i));
-        iRoute.removeEdge(iRoute.getEdgeFrom(i));
-        iRoute.addEdge(new Edge(iRoute.getEdgeTo(i).getFrom(), iRoute.getEdgeFrom(i).getTo()));
+        from = iRoute.getEdgeTo(i).getFrom();
+        to = iRoute.getEdgeFrom(i).getTo();
+        iRoute.removeEdgeTo(i);
+        iRoute.removeEdgeFrom(i);
+        iRoute.addEdge(new Edge(from, to));
         // Insert customer i in edge e
         r.removeEdge(e);
         r.addEdge(new Edge(e.getFrom(), i));
         r.addEdge(new Edge(i, e.getTo()));
+    }
+
+    private void findTwoPointMove(Customer i, Customer[] customers, int Q) {
+        double saving = 0.0;
+        double largestSaving = Double.NEGATIVE_INFINITY;
+        Customer largestSavingCustomer = null;
+        Route iRoute = routes[i.getRoute()];
+        Route jRoute;
+
+        // For all customers
+        for (Customer j : customers) {
+            // Not if customers are the same or other customer is a depot
+            if (i.getId() != j.getId() && j.getId() != 0) {
+                jRoute = routes[j.getRoute()];
+                // If new routes do not exceed vehicle capacity
+                if (iRoute.getWeight() + j.getDemand() - i.getDemand() <= Q && jRoute.getWeight() + i.getDemand() - j.getDemand() <= Q) {
+                    // Delete i from its route
+
+                }
+            }
+        }
     }
 
 }

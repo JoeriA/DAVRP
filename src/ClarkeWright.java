@@ -68,9 +68,9 @@ public class ClarkeWright implements Solver {
             // Create route
             routes[i - 1] = new Route(n, i - 1);
             // Add edge from depot to customer
-            routes[i - 1].addEdge(new Edge(customers[0], customers[i], c[0][i]));
+            routes[i - 1].addEdge(new Edge(customers[0], customers[i], c[0][i], i - 1));
             // Add edge from customer to depot
-            routes[i - 1].addEdge(new Edge(customers[i], customers[0], c[i][0]));
+            routes[i - 1].addEdge(new Edge(customers[i], customers[0], c[i][0], i - 1));
         }
 
         // Calculate all possible savings
