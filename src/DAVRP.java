@@ -22,10 +22,10 @@ class DAVRP {
 //        Solver solver = new ClarkeWright();
         Solver solver = new RecordToRecord();
 
-        int start = 65;
-        int end = 65;
+        int start = 2;
+        int end = 2;
 
-        boolean silent = false;
+        boolean silent = true;
 
         DataReader dataReader = new DataReader();
         DataSet dataSet;

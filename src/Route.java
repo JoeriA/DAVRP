@@ -134,6 +134,7 @@ public class Route {
         }
 
         Edge e = inEdges[j.getId()];
+
         Customer i = e.getFrom();
 
 
