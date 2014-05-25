@@ -198,25 +198,46 @@ public class RecordToRecord implements Solver {
     private void twoPointMove(Customer i, Customer j) {
         Route iRoute = routes[i.getRoute()];
         Route jRoute = routes[j.getRoute()];
-        Customer fromI, toI, fromJ, toJ;
+        Customer beforeI, afterI, beforeJ, afterJ;
 
         // Save info
-        fromI = iRoute.getEdgeTo(i).getFrom();
-        toI = iRoute.getEdgeFrom(i).getTo();
-        fromJ = jRoute.getEdgeTo(j).getFrom();
-        toJ = jRoute.getEdgeFrom(j).getTo();
-        // Delete i from route i
-        iRoute.removeEdgeTo(i);
-        iRoute.removeEdgeFrom(i);
-        // Delete j from route j
-        jRoute.removeEdgeTo(j);
-        jRoute.removeEdgeFrom(j);
-        // Adding j to route i
-        iRoute.addEdge(new Edge(fromI, j));
-        iRoute.addEdge(new Edge(j, toI));
-        // Adding i to route j
-        jRoute.addEdge(new Edge(fromJ, i));
-        jRoute.addEdge(new Edge(i, toJ));
+        beforeI = iRoute.getEdgeTo(i).getFrom();
+        afterI = iRoute.getEdgeFrom(i).getTo();
+        beforeJ = jRoute.getEdgeTo(j).getFrom();
+        afterJ = jRoute.getEdgeFrom(j).getTo();
+        // Check whether i and j are succeeding
+        if (afterI.getId() == j.getId()) {
+            // Delete i and j from route
+            iRoute.removeEdgeTo(i);
+            iRoute.removeEdgeFrom(i);
+            jRoute.removeEdgeFrom(j);
+            // Create connections again
+            iRoute.addEdge(new Edge(beforeI, j));
+            iRoute.addEdge(new Edge(j, i));
+            jRoute.addEdge(new Edge(i, afterJ));
+        } else if (afterJ.getId() == i.getId()) {
+            // Delete i and j from route
+            iRoute.removeEdgeTo(j);
+            iRoute.removeEdgeFrom(j);
+            jRoute.removeEdgeFrom(i);
+            // Create connections again
+            iRoute.addEdge(new Edge(beforeJ, i));
+            iRoute.addEdge(new Edge(i, j));
+            jRoute.addEdge(new Edge(j, afterI));
+        } else {
+            // Delete i from route i
+            iRoute.removeEdgeTo(i);
+            iRoute.removeEdgeFrom(i);
+            // Delete j from route j
+            jRoute.removeEdgeTo(j);
+            jRoute.removeEdgeFrom(j);
+            // Adding j to route i
+            iRoute.addEdge(new Edge(beforeI, j));
+            iRoute.addEdge(new Edge(j, afterI));
+            // Adding i to route j
+            jRoute.addEdge(new Edge(beforeJ, i));
+            jRoute.addEdge(new Edge(i, afterJ));
+        }
     }
 
 }
