@@ -31,6 +31,10 @@ public class Route {
 
     }
 
+    public int getRouteNumber() {
+        return routeNumber;
+    }
+
     /**
      * Add an edge to this route
      *

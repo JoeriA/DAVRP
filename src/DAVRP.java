@@ -22,8 +22,8 @@ class DAVRP {
 //        Solver solver = new ClarkeWright();
         Solver solver = new RecordToRecord();
 
-        int start = 1;
-        int end = 1;
+        int start = 65;
+        int end = 65;
 
         boolean silent = false;
 

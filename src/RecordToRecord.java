@@ -33,7 +33,7 @@ public class RecordToRecord implements Solver {
         int n = dataSet.getNumberOfCustomers() + 1;
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
-        //double[][] c = dataSet.getTravelCosts();
+        double[][] c = dataSet.getTravelCosts();
         Customer[] customers = dataSet.getCustomers();
 
         // Get largest demands
@@ -67,21 +67,49 @@ public class RecordToRecord implements Solver {
         deviation = 0.01 * record;
 
         double tourLength = record;
+        double initialRecord;
 
         // Start improvement iterations
         for (int k = 0; k < K; k++) {
+            initialRecord = record;
+            // One point moves with record to record
             for (Customer i : customers) {
                 if (i.getId() != 0) {
-                    tourLength = findOnePointMove(i, tourLength, Q);
+                    tourLength = findOnePointMove(i, tourLength, Q, c, true);
                 }
             }
+            // Two point moves with record to record
             for (Customer i : customers) {
                 if (i.getId() != 0) {
-                    tourLength = findTwoPointMove(i, tourLength, customers, Q);
+                    tourLength = findTwoPointMove(i, tourLength, customers, Q, c, true);
                 }
+            }
+            // Two opt moves with record to record
+            // TODO two opt moves
+            // Update record when necessary
+            if (tourLength < record) {
+                record = tourLength;
+                deviation = 0.01 * record;
+            }
+            // One point moves downhill
+            for (Customer i : customers) {
+                if (i.getId() != 0) {
+                    tourLength = findOnePointMove(i, tourLength, Q, c, false);
+                }
+            }
+            // Two point moves downhill
+            for (Customer i : customers) {
+                if (i.getId() != 0) {
+                    tourLength = findTwoPointMove(i, tourLength, customers, Q, c, false);
+                }
+            }
+            // Two opt moves downhill
+            // TODO
+            // Stop loop when no new record is produced
+            if (tourLength == initialRecord) {
+                break;
             }
         }
-
 
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
@@ -98,7 +126,7 @@ public class RecordToRecord implements Solver {
         return solution;
     }
 
-    private double findOnePointMove(Customer i, double tourLength, int Q) {
+    private double findOnePointMove(Customer i, double tourLength, int Q, double[][] c, boolean rtr) {
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
@@ -112,13 +140,16 @@ public class RecordToRecord implements Solver {
                         // Remove customer i from its current route
                         saving += iRoute.getEdgeTo(i).getDistance();
                         saving += iRoute.getEdgeFrom(i).getDistance();
-                        saving -= iRoute.getEdgeTo(i).getFrom().getDistance(iRoute.getEdgeFrom(i).getTo());
+//                        saving -= iRoute.getEdgeTo(i).getFrom().getDistance(iRoute.getEdgeFrom(i).getTo());
+                        saving -= c[iRoute.getEdgeTo(i).getFrom().getId()][iRoute.getEdgeFrom(i).getTo().getId()];
                         // Insert customer i in edge e
                         saving += e.getDistance();
-                        saving -= i.getDistance(e.getFrom());
-                        saving -= i.getDistance(e.getTo());
+//                        saving -= i.getDistance(e.getFrom());
+                        saving -= c[i.getId()][e.getFrom().getId()];
+//                        saving -= i.getDistance(e.getTo());
+                        saving -= c[i.getId()][e.getTo().getId()];
                         if (saving >= 0.0) {
-                            onePointMove(i, e);
+                            onePointMove(i, e, c);
                             return tourLength - saving;
                         } else if (saving > largestSaving) {
                             largestSaving = saving;
@@ -128,14 +159,15 @@ public class RecordToRecord implements Solver {
                 }
             }
         }
-        if (tourLength - largestSaving <= record + deviation) {
-            onePointMove(i, largestSavingEdge);
+        if (tourLength - largestSaving <= record + deviation && rtr) {
+            Route r = routes[largestSavingEdge.getRoute()];
+            onePointMove(i, largestSavingEdge, c);
             return tourLength - largestSaving;
         }
         return tourLength;
     }
 
-    private void onePointMove(Customer i, Edge e) {
+    private void onePointMove(Customer i, Edge e, double[][] c) {
         Route iRoute = routes[i.getRoute()];
         Route r = routes[e.getRoute()];
         Customer to, from;
@@ -144,15 +176,15 @@ public class RecordToRecord implements Solver {
         to = iRoute.getEdgeFrom(i).getTo();
         iRoute.removeEdgeTo(i);
         iRoute.removeEdgeFrom(i);
-        iRoute.addEdge(new Edge(from, to));
+        iRoute.addEdge(new Edge(from, to, c[from.getId()][to.getId()]));
         // Insert customer i in edge e
         r.removeEdge(e);
-        r.addEdge(new Edge(e.getFrom(), i));
-        r.addEdge(new Edge(i, e.getTo()));
+        r.addEdge(new Edge(e.getFrom(), i, c[e.getFrom().getId()][i.getId()]));
+        r.addEdge(new Edge(i, e.getTo(), c[i.getId()][e.getTo().getId()]));
     }
 
-    private double findTwoPointMove(Customer i, double tourLength, Customer[] customers, int Q) {
-        double saving = 0.0;
+    private double findTwoPointMove(Customer i, double tourLength, Customer[] customers, int Q, double[][] c, boolean rtr) {
+        double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Customer largestSavingCustomer = null;
         Route iRoute = routes[i.getRoute()];
@@ -163,39 +195,97 @@ public class RecordToRecord implements Solver {
             // Not if customers are the same or other customer is a depot
             if (i.getId() != j.getId() && j.getId() != 0) {
                 jRoute = routes[j.getRoute()];
-                // If new routes do not exceed vehicle capacity
-                if (iRoute.getWeight() + j.getDemand() - i.getDemand() <= Q && jRoute.getWeight() + i.getDemand() - j.getDemand() <= Q) {
-                    saving = 0.0;
+                saving = 0.0;
+                // Save info
+                Customer beforeI = iRoute.getEdgeTo(i).getFrom();
+                Customer afterI = iRoute.getEdgeFrom(i).getTo();
+                Customer beforeJ = jRoute.getEdgeTo(j).getFrom();
+                Customer afterJ = jRoute.getEdgeFrom(j).getTo();
+                // Check whether customers are in the same route
+                if (iRoute.getRouteNumber() == jRoute.getRouteNumber()) {
+                    // Check whether i and j are succeeding
+                    if (afterI.getId() == j.getId()) {
+                        // Delete i and j from route
+                        saving += iRoute.getEdgeTo(i).getDistance();
+                        saving += iRoute.getEdgeFrom(i).getDistance();
+                        saving += jRoute.getEdgeFrom(j).getDistance();
+                        // Create connections again
+//                        saving -= beforeI.getDistance(j);
+                        saving -= c[beforeI.getId()][j.getId()];
+//                        saving -= j.getDistance(i);
+                        saving -= c[j.getId()][i.getId()];
+//                        saving -= i.getDistance(afterJ);
+                        saving -= c[i.getId()][afterJ.getId()];
+                    } else if (afterJ.getId() == i.getId()) {
+                        // Delete i and j from route
+                        saving += jRoute.getEdgeTo(j).getDistance();
+                        saving += jRoute.getEdgeFrom(j).getDistance();
+                        saving += iRoute.getEdgeFrom(i).getDistance();
+                        // Create connections again
+//                        saving -= beforeJ.getDistance(i);
+                        saving -= c[beforeJ.getId()][i.getId()];
+//                        saving -= i.getDistance(j);
+                        saving -= c[i.getId()][j.getId()];
+//                        saving -= j.getDistance(afterI);
+                        saving -= c[j.getId()][afterI.getId()];
+                    } else {
+                        // Delete i from route i
+                        saving += iRoute.getEdgeTo(i).getDistance();
+                        saving += iRoute.getEdgeFrom(i).getDistance();
+                        // Adding j to route i
+//                        saving -= beforeI.getDistance(j);
+                        saving -= c[beforeI.getId()][j.getId()];
+//                        saving -= afterI.getDistance(j);
+                        saving -= c[afterI.getId()][j.getId()];
+                        // Delete j from route j
+                        saving += jRoute.getEdgeTo(j).getDistance();
+                        saving += jRoute.getEdgeFrom(j).getDistance();
+                        // Adding i to route j
+//                        saving -= beforeJ.getDistance(i);
+                        saving -= c[beforeJ.getId()][i.getId()];
+//                        saving -= afterJ.getDistance(i);
+                        saving -= c[afterJ.getId()][i.getId()];
+                    }
+                    // If i and j in different routes and new routes do not exceed vehicle capacity
+                } else if (iRoute.getWeight() + j.getDemand() - i.getDemand() <= Q && jRoute.getWeight() + i.getDemand() - j.getDemand() <= Q) {
                     // Delete i from route i
                     saving += iRoute.getEdgeTo(i).getDistance();
                     saving += iRoute.getEdgeFrom(i).getDistance();
                     // Adding j to route i
-                    saving -= iRoute.getEdgeTo(i).getFrom().getDistance(j);
-                    saving -= iRoute.getEdgeFrom(i).getTo().getDistance(j);
+//                        saving -= beforeI.getDistance(j);
+                    saving -= c[beforeI.getId()][j.getId()];
+//                        saving -= afterI.getDistance(j);
+                    saving -= c[afterI.getId()][j.getId()];
                     // Delete j from route j
                     saving += jRoute.getEdgeTo(j).getDistance();
                     saving += jRoute.getEdgeFrom(j).getDistance();
                     // Adding i to route j
-                    saving -= jRoute.getEdgeTo(j).getFrom().getDistance(i);
-                    saving -= jRoute.getEdgeFrom(j).getTo().getDistance(i);
-                    if (saving >= 0.0) {
-                        twoPointMove(i, j);
-                        return tourLength - saving;
-                    } else if (saving > largestSaving) {
-                        largestSaving = saving;
-                        largestSavingCustomer = j;
-                    }
+//                        saving -= beforeJ.getDistance(i);
+                    saving -= c[beforeJ.getId()][i.getId()];
+//                        saving -= afterJ.getDistance(i);
+                    saving -= c[afterJ.getId()][i.getId()];
+
+                } else {
+                    saving = Double.NEGATIVE_INFINITY;
+                }
+                if (saving >= 0.0) {
+                    twoPointMove(i, j, c);
+                    return tourLength - saving;
+                } else if (saving > largestSaving) {
+                    largestSaving = saving;
+                    largestSavingCustomer = j;
                 }
             }
         }
-        if (tourLength - largestSaving <= record + deviation) {
-            twoPointMove(i, largestSavingCustomer);
+        if (tourLength - largestSaving <= record + deviation && rtr) {
+            jRoute = routes[largestSavingCustomer.getRoute()];
+            twoPointMove(i, largestSavingCustomer, c);
             return tourLength - largestSaving;
         }
         return tourLength;
     }
 
-    private void twoPointMove(Customer i, Customer j) {
+    private void twoPointMove(Customer i, Customer j, double[][] c) {
         Route iRoute = routes[i.getRoute()];
         Route jRoute = routes[j.getRoute()];
         Customer beforeI, afterI, beforeJ, afterJ;
@@ -212,18 +302,18 @@ public class RecordToRecord implements Solver {
             iRoute.removeEdgeFrom(i);
             jRoute.removeEdgeFrom(j);
             // Create connections again
-            iRoute.addEdge(new Edge(beforeI, j));
-            iRoute.addEdge(new Edge(j, i));
-            jRoute.addEdge(new Edge(i, afterJ));
+            iRoute.addEdge(new Edge(beforeI, j, c[beforeI.getId()][j.getId()]));
+            iRoute.addEdge(new Edge(j, i, c[j.getId()][i.getId()]));
+            jRoute.addEdge(new Edge(i, afterJ, c[i.getId()][afterJ.getId()]));
         } else if (afterJ.getId() == i.getId()) {
             // Delete i and j from route
             iRoute.removeEdgeTo(j);
             iRoute.removeEdgeFrom(j);
             jRoute.removeEdgeFrom(i);
             // Create connections again
-            iRoute.addEdge(new Edge(beforeJ, i));
-            iRoute.addEdge(new Edge(i, j));
-            jRoute.addEdge(new Edge(j, afterI));
+            iRoute.addEdge(new Edge(beforeJ, i, c[beforeJ.getId()][i.getId()]));
+            iRoute.addEdge(new Edge(i, j, c[i.getId()][j.getId()]));
+            jRoute.addEdge(new Edge(j, afterI, c[j.getId()][afterI.getId()]));
         } else {
             // Delete i from route i
             iRoute.removeEdgeTo(i);
@@ -232,11 +322,11 @@ public class RecordToRecord implements Solver {
             jRoute.removeEdgeTo(j);
             jRoute.removeEdgeFrom(j);
             // Adding j to route i
-            iRoute.addEdge(new Edge(beforeI, j));
-            iRoute.addEdge(new Edge(j, afterI));
+            iRoute.addEdge(new Edge(beforeI, j, c[beforeI.getId()][j.getId()]));
+            iRoute.addEdge(new Edge(j, afterI, c[j.getId()][afterI.getId()]));
             // Adding i to route j
-            jRoute.addEdge(new Edge(beforeJ, i));
-            jRoute.addEdge(new Edge(i, afterJ));
+            jRoute.addEdge(new Edge(beforeJ, i, c[beforeJ.getId()][i.getId()]));
+            jRoute.addEdge(new Edge(i, afterJ, c[i.getId()][afterJ.getId()]));
         }
     }
 
