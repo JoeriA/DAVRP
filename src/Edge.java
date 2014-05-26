@@ -40,22 +40,6 @@ public class Edge {
         this.distance = distance;
     }
 
-    /**
-     * Create an edge between two customers
-     *
-     * @param i        start customer of edge
-     * @param j        end customer of edge
-     * @param distance length of the edge
-     * @param route    id of the route of the edge
-     */
-    public Edge(Customer i, Customer j, double distance, int route) {
-
-        this.from = i;
-        this.to = j;
-        this.distance = distance;
-        this.route = route;
-    }
-
     public int getRoute() {
         return route;
     }

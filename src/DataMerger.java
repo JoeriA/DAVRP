@@ -34,17 +34,17 @@ public class DataMerger {
         }
         for (int i = 66; i <= 95; i++) {
             for (int j = 1; j <= 3; j++) {
-                readInstanceSingle(i + "_" + j, nrArray);
+                readInstanceSingle2(i + "_" + j, nrArray);
                 nrArray++;
             }
         }
         for (int i = 96; i <= 105; i++) {
-            readInstanceSingle(i + "_1", nrArray);
+            readInstanceSingle2(i + "_1", nrArray);
             nrArray++;
         }
         for (int i = 106; i <= 125; i++) {
             for (int j = 1; j <= 3; j++) {
-                readInstanceSingle(i + "_" + j, nrArray);
+                readInstanceSingle2(i + "_" + j, nrArray);
                 nrArray++;
             }
         }
@@ -61,7 +61,7 @@ public class DataMerger {
      */
     private static void readInstanceSingle(String fileName, int instance) {
         // Write info
-        String[] solvers = {"Exact method (CPLEX)", "Clarke-Wright heuristic"};
+        String[] solvers = {"Exact method (CPLEX)", "CPLEX largest", "Clarke-Wright heuristic", "Record2Record"};
         mergedData[instance] = new String[solvers.length][];
         mergedData[instance][0] = new String[5];
         mergedData[instance][0][0] = fileName;
@@ -81,16 +81,38 @@ public class DataMerger {
      * @param fileName filename of the file (file location with prefix of file name)
      * @param instance number of the instance
      */
+    private static void readInstanceSingle2(String fileName, int instance) {
+        // Write info
+        String[] solvers = {"Remy", "CPLEX largest", "Clarke-Wright heuristic", "Record2Record"};
+        mergedData[instance] = new String[solvers.length][];
+        mergedData[instance][0] = new String[5];
+        mergedData[instance][0][0] = fileName;
+        mergedData[instance][0][1] = solvers[0];
+        readFileRemy1("DAVRPCFRSStatistics_" + fileName, instance, 0);
+        for (int i = 1; i < solvers.length; i++) {
+            mergedData[instance][i] = new String[5];
+            mergedData[instance][i][0] = fileName;
+            mergedData[instance][i][1] = solvers[i];
+            readFile("DAVRPInstance" + fileName + "_results_" + solvers[i], instance, i);
+        }
+    }
+
+    /**
+     * Read an output files for one instance
+     *
+     * @param fileName filename of the file (file location with prefix of file name)
+     * @param instance number of the instance
+     */
     private static void readInstanceThree(String fileName, int instance) {
         // Write info
-        String[] solvers = {"Remy11", "Remy12", "Remy13", "Remy21", "Remy22", "Remy23", "Remy31", "Remy32", "Remy33", "Clarke-Wright heuristic"};
+        String[] solvers = {"Remy11", "Remy12", "Remy13", "Remy21", "Remy22", "Remy23", "Remy31", "Remy32", "Remy33", "Clarke-Wright heuristic", "Record2Record"};
         mergedData[instance] = new String[solvers.length][];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 mergedData[instance][i * 3 + j] = new String[5];
                 mergedData[instance][i * 3 + j][0] = fileName;
                 mergedData[instance][i * 3 + j][1] = solvers[i * 3 + j];
-                readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_" + i + "_" + j, instance, i * 3 + j);
+                readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_" + (i + 1) + "_" + (j + 1), instance, i * 3 + j);
             }
         }
         for (int i = 9; i < solvers.length; i++) {
@@ -109,13 +131,13 @@ public class DataMerger {
      */
     private static void readInstanceH(String fileName, int instance) {
         // Write info
-        String[] solvers = {"RemyH1", "RemyH2", "Clarke-Wright heuristic"};
+        String[] solvers = {"RemyH1", "RemyH2", "Clarke-Wright heuristic", "Record2Record"};
         mergedData[instance] = new String[solvers.length][];
         for (int i = 0; i < 2; i++) {
             mergedData[instance][i] = new String[5];
             mergedData[instance][i][0] = fileName;
             mergedData[instance][i][1] = solvers[i];
-            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + i, instance, i);
+            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + (i + 1), instance, i);
         }
         for (int i = 2; i < solvers.length; i++) {
             mergedData[instance][i] = new String[5];

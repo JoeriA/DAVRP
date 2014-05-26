@@ -35,9 +35,9 @@ public class SolverCplexLargest implements Solver {
         int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
         Customer[] customers = dataSet.getCustomers();
-        double[] p = dataSet.getScenarioProbabilities();
+//        double[] p = dataSet.getScenarioProbabilities();
         double[][] c = dataSet.getTravelCosts();
-        double alpha = dataSet.getAlpha();
+//        double alpha = dataSet.getAlpha();
 
         // Get largest demands
         int[] demands = new int[n];
@@ -78,10 +78,10 @@ public class SolverCplexLargest implements Solver {
         IloLinearNumExpr expr = model.linearNumExpr();
         for (int i = 0; i < n; i++) {
             for (int k = 0; k < m; k++) {
-                    for (int j = 0; j < n; j++) {
-                        expr.addTerm(0.0, f[i][j][k]);
-                        expr.addTerm(c[i][j], x[i][j][k]);
-                    }
+                for (int j = 0; j < n; j++) {
+                    expr.addTerm(0.0, f[i][j][k]);
+                    expr.addTerm(c[i][j], x[i][j][k]);
+                }
             }
         }
         IloObjective obj = model.minimize(expr);
@@ -90,92 +90,92 @@ public class SolverCplexLargest implements Solver {
         // Add restrictions
         // 3
         for (int i = 1; i < n; i++) {
-                expr = model.linearNumExpr();
-                for (int k = 0; k < m; k++) {
-                    for (int j = 0; j < n; j++) {
-                        expr.addTerm(1.0, x[i][j][k]);
-                    }
+            expr = model.linearNumExpr();
+            for (int k = 0; k < m; k++) {
+                for (int j = 0; j < n; j++) {
+                    expr.addTerm(1.0, x[i][j][k]);
                 }
+            }
             model.addEq(expr, 1.0, "c3" + i);
         }
         // 4
-            for (int k = 0; k < m; k++) {
-                expr = model.linearNumExpr();
-                for (int j = 1; j < n; j++) {
-                    expr.addTerm(1.0, x[0][j][k]);
-                }
-                model.addLe(expr, 1.0, "c4" + k);
+        for (int k = 0; k < m; k++) {
+            expr = model.linearNumExpr();
+            for (int j = 1; j < n; j++) {
+                expr.addTerm(1.0, x[0][j][k]);
             }
+            model.addLe(expr, 1.0, "c4" + k);
+        }
         // 5
         for (int i = 0; i < n; i++) {
-                for (int k = 0; k < m; k++) {
-                    expr = model.linearNumExpr();
-                    for (int j = 0; j < n; j++) {
-                        expr.addTerm(1.0, x[i][j][k]);
-                        expr.addTerm(-1.0, x[j][i][k]);
-                    }
-                    model.addEq(expr, 0.0, "c5" + i + "_" + k);
+            for (int k = 0; k < m; k++) {
+                expr = model.linearNumExpr();
+                for (int j = 0; j < n; j++) {
+                    expr.addTerm(1.0, x[i][j][k]);
+                    expr.addTerm(-1.0, x[j][i][k]);
                 }
+                model.addEq(expr, 0.0, "c5" + i + "_" + k);
+            }
         }
         // 6
         for (int i = 1; i < n; i++) {
-                for (int k = 0; k < m; k++) {
-                    expr = model.linearNumExpr();
-                    for (int j = 0; j < n; j++) {
-                        expr.addTerm(1.0, f[j][i][k]);
-                        expr.addTerm(-1.0, f[i][j][k]);
-                        expr.addTerm(-(double) customers[i].getDemand(), x[i][j][k]);
-                    }
-                    model.addEq(expr, 0.0, "c6" + i + "_" + k);
+            for (int k = 0; k < m; k++) {
+                expr = model.linearNumExpr();
+                for (int j = 0; j < n; j++) {
+                    expr.addTerm(1.0, f[j][i][k]);
+                    expr.addTerm(-1.0, f[i][j][k]);
+                    expr.addTerm(-(double) customers[i].getDemand(), x[i][j][k]);
                 }
+                model.addEq(expr, 0.0, "c6" + i + "_" + k);
+            }
         }
         // 7
         for (int i = 0; i < n; i++) {
-                for (int k = 0; k < m; k++) {
-                    for (int j = 0; j < n; j++) {
-                        expr = model.linearNumExpr();
-                        expr.addTerm(1.0, f[i][j][k]);
-                        expr.addTerm((double) (customers[i].getDemand() - Q), x[i][j][k]);
-                        model.addLe(expr, 0.0, "c7" + i + "_" + j + "_" + k);
-                    }
+            for (int k = 0; k < m; k++) {
+                for (int j = 0; j < n; j++) {
+                    expr = model.linearNumExpr();
+                    expr.addTerm(1.0, f[i][j][k]);
+                    expr.addTerm((double) (customers[i].getDemand() - Q), x[i][j][k]);
+                    model.addLe(expr, 0.0, "c7" + i + "_" + j + "_" + k);
                 }
+            }
         }
         // 8
         for (int j = 0; j < n; j++) {
-                for (int k = 0; k < m; k++) {
-                    for (int i = 0; i < n; i++) {
-                        expr = model.linearNumExpr();
-                        expr.addTerm(1.0, f[i][j][k]);
-                        expr.addTerm(-(double) customers[j].getDemand(), x[i][j][k]);
-                        model.addGe(expr, 0.0, "c8" + i + "_" + j + "_" + k);
-                    }
+            for (int k = 0; k < m; k++) {
+                for (int i = 0; i < n; i++) {
+                    expr = model.linearNumExpr();
+                    expr.addTerm(1.0, f[i][j][k]);
+                    expr.addTerm(-(double) customers[j].getDemand(), x[i][j][k]);
+                    model.addGe(expr, 0.0, "c8" + i + "_" + j + "_" + k);
                 }
+            }
         }
         // Valid inequalities
         int sum;
-            sum = 0;
-            expr = model.linearNumExpr();
-            for (int i = 1; i < n; i++) {
-                for (int k = 0; k < m; k++) {
-                    expr.addTerm(1.0, x[0][i][k]);
-                }
-                sum += customers[i].getDemand();
+        sum = 0;
+        expr = model.linearNumExpr();
+        for (int i = 1; i < n; i++) {
+            for (int k = 0; k < m; k++) {
+                expr.addTerm(1.0, x[0][i][k]);
             }
+            sum += customers[i].getDemand();
+        }
         model.addGe(expr, Math.ceil((double) sum / (double) Q), "v1");
         for (int k = 0; k < m - 1; k++) {
-                expr = model.linearNumExpr();
-                for (int i = 0; i < n; i++) {
-                    expr.addTerm(1.0, x[0][i][k]);
-                    expr.addTerm(-1.0, x[0][i][k + 1]);
-                }
+            expr = model.linearNumExpr();
+            for (int i = 0; i < n; i++) {
+                expr.addTerm(1.0, x[0][i][k]);
+                expr.addTerm(-1.0, x[0][i][k + 1]);
+            }
             model.addGe(expr, 0.0, "v3" + k);
         }
         // Disallowed variables
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < m; k++) {
-                    expr = model.linearNumExpr();
+                expr = model.linearNumExpr();
                 expr.addTerm(1.0, x[j][j][k]);
-                    model.addEq(expr, 0.0, "d" + j);
+                model.addEq(expr, 0.0, "d" + j);
             }
         }
         // Optimize model

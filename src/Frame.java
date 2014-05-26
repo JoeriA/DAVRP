@@ -227,6 +227,7 @@ public class Frame extends JFrame implements ChangeListener {
                         x2 = transformX(e.getTo().getxCoordinate());
                         y2 = transformY(e.getTo().getyCoordinate());
                         g2d.drawLine(x1, y1, x2, y2);
+//                        g2d.drawString(""+e.getDistance(),(x1 + x2) / 2, (y1+y2)/2);
                     }
                 }
             }

@@ -22,10 +22,10 @@ class DAVRP {
 //        Solver solver = new ClarkeWright();
         Solver solver = new RecordToRecord();
 
-        int start = 65;
+        int start = 1;
         int end = 65;
 
-        boolean silent = false;
+        boolean silent = true;
 
         DataReader dataReader = new DataReader();
         DataSet dataSet;
@@ -99,6 +99,7 @@ class DAVRP {
         // Write y
         try {
             // Create file
+//            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
             FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 

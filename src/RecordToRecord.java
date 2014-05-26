@@ -26,7 +26,7 @@ public class RecordToRecord implements Solver {
         solution.setName("Record2Record");
 
         // Parameters
-        double I = 30;
+//        double I = 30;
         double K = 5;
 
         // Get some data from dataset
@@ -56,6 +56,8 @@ public class RecordToRecord implements Solver {
 
         ClarkeWright cw = new ClarkeWright();
 
+
+        // TODO check whether clarke wright with different lambdas give different (better) solutions
 //        double[] lambdas = {0.6,1.0,1.4,1.6};
 //        for (int lambda = 0; lambda < lambdas.length; lambda++) {
 //            cw.setLambda(lambdas[lambda]);
@@ -85,7 +87,13 @@ public class RecordToRecord implements Solver {
                 }
             }
             // Two opt moves with record to record
-            // TODO two opt moves
+            for (Route r : routes) {
+                if (r != null) {
+                    for (Edge e : r.getEdges()) {
+                        tourLength = findTwoOptMove(e, tourLength, Q, c, true);
+                    }
+                }
+            }
             // Update record when necessary
             if (tourLength < record) {
                 record = tourLength;
@@ -104,12 +112,20 @@ public class RecordToRecord implements Solver {
                 }
             }
             // Two opt moves downhill
-            // TODO
+            for (Route r : routes) {
+                if (r != null) {
+                    for (Edge e : r.getEdges()) {
+                        tourLength = findTwoOptMove(e, tourLength, Q, c, false);
+                    }
+                }
+            }
             // Stop loop when no new record is produced
             if (tourLength == initialRecord) {
                 break;
             }
         }
+
+        // TODO perturb solution (maybe also try in loop)
 
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
@@ -160,7 +176,6 @@ public class RecordToRecord implements Solver {
             }
         }
         if (tourLength - largestSaving <= record + deviation && rtr) {
-            Route r = routes[largestSavingEdge.getRoute()];
             onePointMove(i, largestSavingEdge, c);
             return tourLength - largestSaving;
         }
@@ -278,7 +293,6 @@ public class RecordToRecord implements Solver {
             }
         }
         if (tourLength - largestSaving <= record + deviation && rtr) {
-            jRoute = routes[largestSavingCustomer.getRoute()];
             twoPointMove(i, largestSavingCustomer, c);
             return tourLength - largestSaving;
         }
@@ -328,6 +342,36 @@ public class RecordToRecord implements Solver {
             jRoute.addEdge(new Edge(beforeJ, i, c[beforeJ.getId()][i.getId()]));
             jRoute.addEdge(new Edge(i, afterJ, c[i.getId()][afterJ.getId()]));
         }
+    }
+
+    private double findTwoOptMove(Edge e, double tourLength, int Q, double[][] c, boolean rtr) {
+        double saving;
+        double largestSaving = Double.NEGATIVE_INFINITY;
+        Edge largestSavingEdge = null;
+        Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
+        for (Edge f : routes[e.getRoute()].getEdges()) {
+            saving = 0.0;
+            startF = f.getFrom();
+            endF = f.getTo();
+            saving += e.getDistance();
+            saving += f.getDistance();
+            saving += c[startE.getId()][endF.getId()];
+            saving -= c[startF.getId()][endE.getId()];
+            if (saving >= 0.0) {
+                twoOptMove(e, f, c);
+                return tourLength - saving;
+            }
+        }
+        // TODO check if 2-opt between routes is promising (routes must be combined, check vehicle capacity)
+        if (tourLength - largestSaving <= record + deviation && rtr) {
+            twoOptMove(e, largestSavingEdge, c);
+            return tourLength - largestSaving;
+        }
+        return tourLength;
+    }
+
+    private void twoOptMove(Edge e, Edge f, double[][] c) {
+        // TODO twoOptMove
     }
 
 }
