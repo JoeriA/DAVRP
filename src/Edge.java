@@ -26,6 +26,14 @@ public class Edge {
         this.distance = Math.sqrt(x2 + y2);
     }
 
+    /**
+     * Create an edge between two customers (used for creating a copy)
+     *
+     * @param i        start customer of edge
+     * @param j        end customer of edge
+     * @param distance length of the edge
+     * @param route    number of the route in which this edge is located
+     */
     private Edge(Customer i, Customer j, double distance, int route) {
         this.from = i;
         this.to = j;
@@ -47,14 +55,29 @@ public class Edge {
         this.distance = distance;
     }
 
+    /**
+     * Get a copy of this edge (hard copy without references)
+     *
+     * @return copy of this edge (hard copy without references)
+     */
     public Edge getCopy() {
         return new Edge(from.getCopy(), to.getCopy(), distance, route);
     }
 
+    /**
+     * Get the number of the route in which this edge is located
+     *
+     * @return number of the route in which this edge is located
+     */
     public int getRoute() {
         return route;
     }
 
+    /**
+     * Set number of the route in which this edge is located
+     *
+     * @param route number of the route in which this edge is located
+     */
     public void setRoute(int route) {
         this.route = route;
     }

@@ -21,6 +21,17 @@ public class Customer {
         this.id = id;
     }
 
+    /**
+     * Create a new customer (used for creating a copy)
+     *
+     * @param id                identification number of customer
+     * @param xCoordinate       x-coordinate of customer
+     * @param yCoordinate       y-coordinate of customer
+     * @param demandPerScenario array of demand per scenario
+     * @param demand            demand of this customer in a particular scenario
+     * @param route             the number of the route this customer is in
+     * @param r                 parameter for record to record algorithm
+     */
     private Customer(int id, double xCoordinate, double yCoordinate, int[] demandPerScenario, int demand, int route, double r) {
         this.id = id;
         this.xCoordinate = xCoordinate;
@@ -31,6 +42,11 @@ public class Customer {
         this.r = r;
     }
 
+    /**
+     * Get a copy of this customer (hard copy without references)
+     *
+     * @return a copy of this customer (hard copy without references)
+     */
     public Customer getCopy() {
         int[] demandPerScenarioCopy = new int[demandPerScenario.length];
         for (int i = 0; i < demandPerScenario.length; i++) {
@@ -40,10 +56,20 @@ public class Customer {
         return copy;
     }
 
+    /**
+     * Get the parameter for record to record algorithm
+     *
+     * @return parameter for record to record algorithm
+     */
     public double getR() {
         return r;
     }
 
+    /**
+     * Set parameter for record to record algorithm
+     *
+     * @param r parameter for record to record algorithm
+     */
     public void setR(double r) {
         this.r = r;
     }

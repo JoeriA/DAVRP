@@ -30,6 +30,17 @@ public class Route {
         this.routeNumber = routeNumber;
     }
 
+    /**
+     * Create a route (used for creating a copy of this route)
+     *
+     * @param costs       costs of this route (total distance)
+     * @param weight      sum of demands of customers in this route
+     * @param inEdges     array of incoming edges for each customer
+     * @param outEdges    array of outgoing edges for each customer
+     * @param customers   array of customer in this route
+     * @param edges       arraylist of edges in this route
+     * @param routeNumber number of this route
+     */
     private Route(double costs, int weight, Edge[] inEdges, Edge[] outEdges, Customer[] customers, ArrayList<Edge> edges, int routeNumber) {
         this.costs = costs;
         this.weight = weight;
@@ -40,14 +51,21 @@ public class Route {
         this.routeNumber = routeNumber;
     }
 
+    /**
+     * Get a copy of this route (hard copy without references)
+     *
+     * @return copy of this route (hard copy without references)
+     */
     public Route getCopy() {
         int n = customers.length;
+        // Create copy of all customers
         Customer[] customersCopy = new Customer[n];
         for (int i = 0; i < n; i++) {
             if (customers[i] != null) {
                 customersCopy[i] = customers[i].getCopy();
             }
         }
+        // Create copy of all edges
         Edge[] inEdgesCopy = new Edge[n];
         Edge[] outEdgesCopy = new Edge[n];
         ArrayList<Edge> edgesCopy = new ArrayList<Edge>(edges.size());
@@ -61,14 +79,23 @@ public class Route {
                 edgesCopy.add(outEdgesCopy[i]);
             }
         }
-        Route copy = new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, routeNumber);
-        return copy;
+        return new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, routeNumber);
     }
 
+    /**
+     * Get array of customer in this route
+     *
+     * @return array of customer in this route
+     */
     public Customer[] getCustomers() {
         return customers;
     }
 
+    /**
+     * Get number of this route
+     *
+     * @return number of this route
+     */
     public int getRouteNumber() {
         return routeNumber;
     }
@@ -278,6 +305,13 @@ public class Route {
         }
     }
 
+    /**
+     * Perform two opt move
+     *
+     * @param e first edge for move
+     * @param f second edge for move
+     * @param c distance matrix
+     */
     public void twoOptMove(Edge e, Edge f, double[][] c) {
         Edge firstEdge, secondEdge;
         int nextCustomer = 0;
@@ -313,14 +347,22 @@ public class Route {
         addEdge(new Edge(firstEdge.getTo(), secondEdge.getTo(), c[firstEdge.getTo().getId()][secondEdge.getTo().getId()]));
     }
 
-    public boolean hasEdge(Edge e) {
-        return edges.contains(e);
-    }
-
+    /**
+     * Get the edge from a certain customer
+     *
+     * @param i customer where the edge starts
+     * @return edge to the given customer
+     */
     public Edge getEdgeFrom(Customer i) {
         return outEdges[i.getId()];
     }
 
+    /**
+     * Get the edge to a certain customer
+     *
+     * @param j customer where the edge ends
+     * @return edge from the given customer
+     */
     public Edge getEdgeTo(Customer j) {
         return inEdges[j.getId()];
     }
