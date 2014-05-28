@@ -28,7 +28,45 @@ public class Route {
         this.customers = new Customer[nrOfNodes];
         this.edges = new ArrayList<Edge>();
         this.routeNumber = routeNumber;
+    }
 
+    private Route(double costs, int weight, Edge[] inEdges, Edge[] outEdges, Customer[] customers, ArrayList<Edge> edges, int routeNumber) {
+        this.costs = costs;
+        this.weight = weight;
+        this.inEdges = inEdges;
+        this.outEdges = outEdges;
+        this.customers = customers;
+        this.edges = edges;
+        this.routeNumber = routeNumber;
+    }
+
+    public Route getCopy() {
+        int n = customers.length;
+        Customer[] customersCopy = new Customer[n];
+        for (int i = 0; i < n; i++) {
+            if (customers[i] != null) {
+                customersCopy[i] = customers[i].getCopy();
+            }
+        }
+        Edge[] inEdgesCopy = new Edge[n];
+        Edge[] outEdgesCopy = new Edge[n];
+        ArrayList<Edge> edgesCopy = new ArrayList<Edge>(edges.size());
+        for (int i = 0; i < n; i++) {
+            if (inEdges[i] != null) {
+                inEdgesCopy[i] = inEdges[i].getCopy();
+                edgesCopy.add(inEdgesCopy[i]);
+            }
+            if (outEdges[i] != null) {
+                outEdgesCopy[i] = outEdges[i].getCopy();
+                edgesCopy.add(outEdgesCopy[i]);
+            }
+        }
+        Route copy = new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, routeNumber);
+        return copy;
+    }
+
+    public Customer[] getCustomers() {
+        return customers;
     }
 
     public int getRouteNumber() {
@@ -238,6 +276,45 @@ public class Route {
         } else {
             return false;
         }
+    }
+
+    public void twoOptMove(Edge e, Edge f, double[][] c) {
+        Edge firstEdge, secondEdge;
+        int nextCustomer = 0;
+        // Find first edge to swap in route (starting at depot)
+        while (nextCustomer != e.getFrom().getId() && nextCustomer != f.getFrom().getId()) {
+            nextCustomer = outEdges[nextCustomer].getTo().getId();
+        }
+        // Determine which edge is found and what the next edge to find is
+        if (nextCustomer == e.getFrom().getId()) {
+            firstEdge = e;
+            secondEdge = f;
+        } else {
+            firstEdge = f;
+            secondEdge = e;
+        }
+        ArrayList<Customer> reverseCustomers = new ArrayList<Customer>();
+        // Find next edge to swap. In meanwhile save all intermediate edges and customers
+        while (nextCustomer != secondEdge.getFrom().getId()) {
+            reverseCustomers.add(outEdges[nextCustomer].getTo());
+            nextCustomer = outEdges[nextCustomer].getTo().getId();
+        }
+        // Remove edges that must be reversed
+        removeEdge(e);
+        removeEdge(f);
+        for (int i = 0; i < reverseCustomers.size() - 1; i++) {
+            removeEdge(reverseCustomers.get(i), reverseCustomers.get(i + 1));
+        }
+        // Create new edges
+        addEdge(new Edge(firstEdge.getFrom(), secondEdge.getFrom(), c[firstEdge.getFrom().getId()][secondEdge.getFrom().getId()]));
+        for (int i = reverseCustomers.size() - 1; i > 0; i--) {
+            addEdge(new Edge(reverseCustomers.get(i), reverseCustomers.get(i - 1), c[reverseCustomers.get(i).getId()][reverseCustomers.get(i - 1).getId()]));
+        }
+        addEdge(new Edge(firstEdge.getTo(), secondEdge.getTo(), c[firstEdge.getTo().getId()][secondEdge.getTo().getId()]));
+    }
+
+    public boolean hasEdge(Edge e) {
+        return edges.contains(e);
     }
 
     public Edge getEdgeFrom(Customer i) {

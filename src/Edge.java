@@ -26,6 +26,13 @@ public class Edge {
         this.distance = Math.sqrt(x2 + y2);
     }
 
+    private Edge(Customer i, Customer j, double distance, int route) {
+        this.from = i;
+        this.to = j;
+        this.distance = distance;
+        this.route = route;
+    }
+
     /**
      * Create an edge between two customers
      *
@@ -38,6 +45,10 @@ public class Edge {
         this.from = i;
         this.to = j;
         this.distance = distance;
+    }
+
+    public Edge getCopy() {
+        return new Edge(from.getCopy(), to.getCopy(), distance, route);
     }
 
     public int getRoute() {

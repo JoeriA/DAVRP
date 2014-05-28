@@ -6,7 +6,7 @@ import java.io.FileWriter;
 
 /**
  * Created by Joeri on 11-4-2014.
- *
+ * <p/>
  * Main file for the DAVRP problem solver
  */
 class DAVRP {
@@ -22,10 +22,10 @@ class DAVRP {
 //        Solver solver = new ClarkeWright();
         Solver solver = new RecordToRecord();
 
-        int start = 1;
-        int end = 65;
+        int start = 30;
+        int end = 30;
 
-        boolean silent = true;
+        boolean silent = false;
 
         DataReader dataReader = new DataReader();
         DataSet dataSet;
@@ -41,6 +41,7 @@ class DAVRP {
                         frame.createMap(dataSet);
                     }
                     Solution solution = solver.solve(dataSet);
+                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     if (!silent) {
                         frame.drawResults(solution);
                     }
@@ -61,6 +62,7 @@ class DAVRP {
                             frame.createMap(dataSet);
                         }
                         Solution solution = solver.solve(dataSet);
+                        System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                         if (!silent) {
                             frame.drawResults(solution);
                         }
@@ -81,6 +83,7 @@ class DAVRP {
                         frame.createMap(dataSet);
                     }
                     Solution solution = solver.solve(dataSet);
+                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     if (!silent) {
                         frame.drawResults(solution);
                     }
@@ -99,8 +102,8 @@ class DAVRP {
         // Write y
         try {
             // Create file
-//            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
-            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
+//            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";

@@ -4,7 +4,7 @@ import java.io.*;
  * Created by Joeri on 15-5-2014.
  * Create class for merging all outputs from different solvers
  */
-public class DataMerger {
+public class DataMerger2 {
 
     private static String[][][] mergedData;
 
