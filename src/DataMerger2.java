@@ -6,7 +6,9 @@ import java.io.*;
  */
 public class DataMerger2 {
 
-    private static String[][][] mergedData;
+    private static String[][] mergedData;
+    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "CPLEX largest", "Record2Record"};
+    private static double[][] runTimeData;
 
     /**
      * Merge all outputs from different solvers
@@ -15,8 +17,9 @@ public class DataMerger2 {
      */
     public static void main(String[] args) {
 
-        int nrOfInstances = 65 + 60 * 3;
-        mergedData = new String[nrOfInstances][][];
+        int nrOfInstances = 75 + 50 * 3;
+        mergedData = new String[nrOfInstances + 2][5 + solverNames.length];
+        runTimeData = new double[2][solverNames.length];
 
         // Get
         int nrArray = 0;
@@ -49,6 +52,8 @@ public class DataMerger2 {
             }
         }
 
+        calculateBestValues();
+        calculateMeanRuntimes();
         writeToFile();
 
     }
@@ -61,17 +66,11 @@ public class DataMerger2 {
      */
     private static void readInstanceSingle(String fileName, int instance) {
         // Write info
-        String[] solvers = {"Exact method (CPLEX)", "CPLEX largest", "Clarke-Wright heuristic", "Record2Record"};
-        mergedData[instance] = new String[solvers.length][];
-        mergedData[instance][0] = new String[5];
-        mergedData[instance][0][0] = fileName;
-        mergedData[instance][0][1] = solvers[0];
-        readFileRemy1("DAVRPInCPLEXStatistics_" + fileName, instance, 0);
-        for (int i = 1; i < solvers.length; i++) {
-            mergedData[instance][i] = new String[5];
-            mergedData[instance][i][0] = fileName;
-            mergedData[instance][i][1] = solvers[i];
-            readFile("DAVRPInstance" + fileName + "_results_" + solvers[i], instance, i);
+        mergedData[instance][0] = fileName;
+        readInfo(fileName, instance);
+        readFileRemy1("DAVRPInCPLEXStatistics_" + fileName, instance, 5);
+        for (int i = 3; i < solverNames.length; i++) {
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
     }
 
@@ -83,17 +82,11 @@ public class DataMerger2 {
      */
     private static void readInstanceSingle2(String fileName, int instance) {
         // Write info
-        String[] solvers = {"Remy", "CPLEX largest", "Clarke-Wright heuristic", "Record2Record"};
-        mergedData[instance] = new String[solvers.length][];
-        mergedData[instance][0] = new String[5];
-        mergedData[instance][0][0] = fileName;
-        mergedData[instance][0][1] = solvers[0];
-        readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 0);
-        for (int i = 1; i < solvers.length; i++) {
-            mergedData[instance][i] = new String[5];
-            mergedData[instance][i][0] = fileName;
-            mergedData[instance][i][1] = solvers[i];
-            readFile("DAVRPInstance" + fileName + "_results_" + solvers[i], instance, i);
+        mergedData[instance][0] = fileName;
+        readInfo(fileName, instance);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 7);
+        for (int i = 3; i < solverNames.length; i++) {
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
     }
 
@@ -105,21 +98,11 @@ public class DataMerger2 {
      */
     private static void readInstanceThree(String fileName, int instance) {
         // Write info
-        String[] solvers = {"RemyH1_11", "RemyH1_12", "RemyH1_13", "RemyH1_21", "RemyH1_22", "RemyH1_23", "RemyH1_31", "RemyH1_32", "RemyH1_33", "Clarke-Wright heuristic", "Record2Record"};
-        mergedData[instance] = new String[solvers.length][];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                mergedData[instance][i * 3 + j] = new String[5];
-                mergedData[instance][i * 3 + j][0] = fileName;
-                mergedData[instance][i * 3 + j][1] = solvers[i * 3 + j];
-                readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_" + (i + 1) + "_" + (j + 1), instance, i * 3 + j);
-            }
-        }
-        for (int i = 9; i < solvers.length; i++) {
-            mergedData[instance][i] = new String[5];
-            mergedData[instance][i][0] = fileName;
-            mergedData[instance][i][1] = solvers[i];
-            readFile("DAVRPInstance" + fileName + "_results_" + solvers[i], instance, i);
+        mergedData[instance][0] = fileName;
+        readInfo(fileName, instance);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_1_2", instance, 6);
+        for (int i = 3; i < solverNames.length; i++) {
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
     }
 
@@ -131,19 +114,13 @@ public class DataMerger2 {
      */
     private static void readInstanceH(String fileName, int instance) {
         // Write info
-        String[] solvers = {"RemyH1", "RemyH2", "Clarke-Wright heuristic", "Record2Record"};
-        mergedData[instance] = new String[solvers.length][];
-        for (int i = 0; i < 2; i++) {
-            mergedData[instance][i] = new String[5];
-            mergedData[instance][i][0] = fileName;
-            mergedData[instance][i][1] = solvers[i];
-            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + (i + 1), instance, i);
+        mergedData[instance][0] = fileName;
+        readInfo(fileName, instance);
+        for (int i = 1; i <= 2; i++) {
+            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + i, instance, (i + 5));
         }
-        for (int i = 2; i < solvers.length; i++) {
-            mergedData[instance][i] = new String[5];
-            mergedData[instance][i][0] = fileName;
-            mergedData[instance][i][1] = solvers[i];
-            readFile("DAVRPInstance" + fileName + "_results_" + solvers[i], instance, i);
+        for (int i = 3; i < solverNames.length; i++) {
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
     }
 
@@ -166,15 +143,12 @@ public class DataMerger2 {
             // Save runtime
             s = reader.readLine();
             split = s.split("\t");
-            mergedData[instance][solver][2] = split[split.length - 1];
+            runTimeData[0][solver - 5] += Double.parseDouble(split[split.length - 1]);
+            runTimeData[1][solver - 5] += 1.0;
             // Save value
             s = reader.readLine();
             split = s.split("\t");
-            mergedData[instance][solver][3] = split[split.length - 1];
-            // Save gap
-            s = reader.readLine();
-            split = s.split("\t");
-            mergedData[instance][solver][4] = split[split.length - 1];
+            mergedData[instance][solver] = split[split.length - 1];
         } catch (IOException e) {
             mergedData[instance][solver] = null;
         } finally {
@@ -210,15 +184,13 @@ public class DataMerger2 {
                 // Save value
                 s = reader.readLine();
                 split = s.split(" ");
-                mergedData[instance][solver][3] = split[split.length - 1];
-                // Save gap
-                s = reader.readLine();
-                split = s.split(" ");
-                mergedData[instance][solver][4] = split[split.length - 1];
+                mergedData[instance][solver] = split[split.length - 1];
+                reader.readLine();
                 // Save runtime
                 s = reader.readLine();
                 split = s.split(" ");
-                mergedData[instance][solver][2] = split[split.length - 1];
+                runTimeData[0][solver - 5] += Double.parseDouble(split[split.length - 1]);
+                runTimeData[1][solver - 5] += 1.0;
             } else {
                 mergedData[instance][solver] = null;
             }
@@ -257,13 +229,14 @@ public class DataMerger2 {
                 // Save value
                 s = reader.readLine();
                 split = s.split(" ");
-                mergedData[instance][solver][3] = split[split.length - 1];
+                mergedData[instance][solver] = split[split.length - 1];
                 // Save runtime
                 reader.readLine();
                 reader.readLine();
                 s = reader.readLine();
                 split = s.split(" ");
-                mergedData[instance][solver][2] = split[split.length - 1];
+                runTimeData[0][solver - 5] += Double.parseDouble(split[split.length - 1]);
+                runTimeData[1][solver - 5] += 1.0;
             } else {
                 mergedData[instance][solver] = null;
             }
@@ -280,6 +253,36 @@ public class DataMerger2 {
         }
     }
 
+    private static void calculateMeanRuntimes() {
+        mergedData[mergedData.length - 1][0] = "Average runtime (s)";
+        for (int i = 0; i < solverNames.length; i++) {
+            mergedData[mergedData.length - 1][i + 5] = "" + (runTimeData[0][i] / runTimeData[1][i]);
+        }
+    }
+
+    private static void calculateBestValues() {
+        double bestValue;
+        double[] gaps = new double[solverNames.length];
+        for (int i = 0; i < mergedData.length - 2; i++) {
+            bestValue = Double.POSITIVE_INFINITY;
+            for (int j = 5; j < mergedData[i].length; j++) {
+                if (mergedData[i][j] != null && Double.parseDouble(mergedData[i][j]) < bestValue) {
+                    bestValue = Double.parseDouble(mergedData[i][j]);
+                }
+            }
+            mergedData[i][4] = "" + bestValue;
+            for (int j = 5; j < mergedData[i].length; j++) {
+                if (mergedData[i][j] != null) {
+                    gaps[j - 5] += (Double.parseDouble(mergedData[i][j]) - bestValue) / bestValue;
+                }
+            }
+        }
+        mergedData[mergedData.length - 2][0] = "Avg. gap (%)";
+        for (int i = 0; i < gaps.length; i++) {
+            mergedData[mergedData.length - 2][i + 5] = "" + gaps[i] / runTimeData[1][i] * 100.0;
+        }
+    }
+
     /**
      * Create one master table with all results
      */
@@ -287,25 +290,28 @@ public class DataMerger2 {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Merged output.txt");
+            FileWriter fstream = new FileWriter("Merged output2.txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
 
             // Title
-            line += "Instance\tSolver\tRuntime\tObjective value\tGap\r\n";
+            line += "Instance\t# Customers\t# Scenarios\tAlpha\tBest";
+            for (String s : solverNames) {
+                line += "\t" + s;
+            }
+            line += "\r\n";
 
             // For every instance and solver, create a line with all info
-            for (String[][] instance : mergedData) {
+            for (String[] instance : mergedData) {
                 if (instance != null) {
-                    for (String[] solver : instance) {
-                        if (solver != null) {
-                            for (String value : solver) {
-                                line += value + "\t";
-                            }
-                            line += "\r\n";
+                    for (String value : instance) {
+                        if (value != null) {
+                            line += value;
                         }
+                        line += "\t";
                     }
+                    line += "\r\n";
                 }
             }
 
@@ -315,6 +321,47 @@ public class DataMerger2 {
             out.close();
         } catch (Exception e) {// Catch exception if any
             System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void readInfo(String fileName, int instance) {
+        // Initialize temporary variables
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader("Test Instances/DAVRPInstance" + fileName + ".txt"));
+            String s;
+            String[] split;
+
+            // Read number of customers
+            s = reader.readLine();
+            split = s.split(" ");
+            mergedData[instance][1] = split[split.length - 1];
+
+            // Read vehicle capacity
+            reader.readLine();
+
+            // Read alpha
+            s = reader.readLine();
+            split = s.split(" ");
+            mergedData[instance][3] = split[split.length - 1];
+
+            // Read number of scenarios
+            s = reader.readLine();
+            split = s.split(" ");
+            mergedData[instance][2] = split[split.length - 1];
+
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found");
+        } catch (IOException e) {
+            System.out.println("Error reading file" + e.getMessage());
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Error closing the reader");
+            }
         }
     }
 
