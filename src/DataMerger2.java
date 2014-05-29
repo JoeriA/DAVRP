@@ -253,6 +253,9 @@ public class DataMerger2 {
         }
     }
 
+    /**
+     * Calculate mean running time for each solver
+     */
     private static void calculateMeanRuntimes() {
         mergedData[mergedData.length - 1][0] = "Average runtime (s)";
         for (int i = 0; i < solverNames.length; i++) {
@@ -260,6 +263,9 @@ public class DataMerger2 {
         }
     }
 
+    /**
+     * Calculate best solution for each instance and calculate average gap for each solver
+     */
     private static void calculateBestValues() {
         double bestValue;
         double[] gaps = new double[solverNames.length];
@@ -324,6 +330,12 @@ public class DataMerger2 {
         }
     }
 
+    /**
+     * Read information about an instance
+     *
+     * @param fileName String with instance number
+     * @param instance row number in the data matrix
+     */
     private static void readInfo(String fileName, int instance) {
         // Initialize temporary variables
         BufferedReader reader = null;
