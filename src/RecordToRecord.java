@@ -10,6 +10,7 @@ public class RecordToRecord implements Solver {
     private Route[] routes;
     private double record;
     private double deviation;
+    private double tourLength;
 
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
@@ -60,6 +61,8 @@ public class RecordToRecord implements Solver {
 
         Route[] bestRoutes = null;
         double bestValue = Double.POSITIVE_INFINITY;
+        double initialRecord;
+        Route r;
 
         for (double lambda = 0.6; lambda <= 2.0; lambda += 0.2) {
             cw.setLambda(lambda);
@@ -68,63 +71,46 @@ public class RecordToRecord implements Solver {
             record = cwSolution.getObjectiveValue();
             deviation = 0.01 * record;
 
-            double tourLength = record;
-            double initialRecord;
+            tourLength = record;
+            boolean onePoint, twoPoint, twoOpt;
 
             // Start improvement iterations
             for (int k = 0; k < K; k++) {
                 initialRecord = record;
-                // One point moves with record to record
+                // Moves with record to record
+                loopI:
                 for (Customer i : customers) {
                     if (i.getId() != 0) {
-                        tourLength = findOnePointMove(i, tourLength, Q, c, true);
-                    }
-                }
-                // Two point moves with record to record
-                for (Customer i : customers) {
-                    if (i.getId() != 0) {
-                        tourLength = findTwoPointMove(i, tourLength, customers, Q, c, true);
-                    }
-                }
-                // Two opt moves with record to record
-                for (Route r : routes) {
-                    if (r != null) {
-                        for (Customer cust : r.getCustomers()) {
-                            if (cust != null) {
-                                tourLength = findTwoOptMove(r.getEdgeFrom(cust), tourLength, Q, c, true);
-                            }
+                        onePoint = findOnePointMove(i, Q, c, true);
+                        twoPoint = findTwoPointMove(i, customers, Q, c, true);
+                        r = routes[i.getRoute()];
+                        twoOpt = findTwoOptMove(r.getEdgeFrom(i), Q, c, true);
+                        if (!onePoint && !twoPoint && !twoOpt) {
+                            break loopI;
+                        }
+                        // Update record when necessary
+                        if (tourLength < record) {
+                            record = tourLength;
+                            deviation = 0.01 * record;
                         }
                     }
                 }
-                // Update record when necessary
-                if (tourLength < record) {
-                    record = tourLength;
-                    deviation = 0.01 * record;
-                }
-                // One point moves downhill
+                // Downhill moves
                 for (Customer i : customers) {
                     if (i.getId() != 0) {
-                        tourLength = findOnePointMove(i, tourLength, Q, c, false);
-                    }
-                }
-                // Two point moves downhill
-                for (Customer i : customers) {
-                    if (i.getId() != 0) {
-                        tourLength = findTwoPointMove(i, tourLength, customers, Q, c, false);
-                    }
-                }
-                // Two opt moves downhill
-                for (Route r : routes) {
-                    if (r != null) {
-                        for (Customer cust : r.getCustomers()) {
-                            if (cust != null) {
-                                tourLength = findTwoOptMove(r.getEdgeFrom(cust), tourLength, Q, c, false);
-                            }
+                        findOnePointMove(i, Q, c, false);
+                        findTwoPointMove(i, customers, Q, c, false);
+                        r = routes[i.getRoute()];
+                        findTwoOptMove(r.getEdgeFrom(i), Q, c, false);
+                        // Update record when necessary
+                        if (tourLength < record) {
+                            record = tourLength;
+                            deviation = 0.01 * record;
                         }
                     }
                 }
                 // Stop loop when no new record is produced
-                if (tourLength == initialRecord) {
+                if (record == initialRecord) {
                     break;
                 }
             }
@@ -206,6 +192,7 @@ public class RecordToRecord implements Solver {
             customer = perturbC.get(j);
             saving += applyBestInsertion(customer, Q, c);
         }
+        tourLength -= saving;
         return tourLength - saving;
     }
 
@@ -262,13 +249,12 @@ public class RecordToRecord implements Solver {
      * Find one point move
      *
      * @param i          point to move
-     * @param tourLength current length of the tour
      * @param Q          vehicle capacity
      * @param c          distance matrix
      * @param rtr        true if record to record must be applied, false for only downhill moves
      * @return new tour length
      */
-    private double findOnePointMove(Customer i, double tourLength, int Q, double[][] c, boolean rtr) {
+    private boolean findOnePointMove(Customer i, int Q, double[][] c, boolean rtr) {
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
@@ -292,7 +278,8 @@ public class RecordToRecord implements Solver {
                         saving -= c[i.getId()][e.getTo().getId()];
                         if (saving >= 0.0) {
                             onePointMove(i, e, c);
-                            return tourLength - saving;
+                            tourLength -= saving;
+                            return true;
                         } else if (saving > largestSaving) {
                             largestSaving = saving;
                             largestSavingEdge = e;
@@ -303,9 +290,10 @@ public class RecordToRecord implements Solver {
         }
         if (tourLength - largestSaving <= record + deviation && rtr) {
             onePointMove(i, largestSavingEdge, c);
-            return tourLength - largestSaving;
+            tourLength -= largestSaving;
+            return true;
         }
-        return tourLength;
+        return false;
     }
 
     /**
@@ -339,14 +327,13 @@ public class RecordToRecord implements Solver {
      * Find a two point move
      *
      * @param i          first customer to move
-     * @param tourLength current length of the tour
      * @param customers  arraylist of customers
      * @param Q          vehicle capacity
      * @param c          distance matrix
      * @param rtr        true if record to record must be applied, false for only downhill moves
      * @return new length of the tour
      */
-    private double findTwoPointMove(Customer i, double tourLength, Customer[] customers, int Q, double[][] c, boolean rtr) {
+    private boolean findTwoPointMove(Customer i, Customer[] customers, int Q, double[][] c, boolean rtr) {
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Customer largestSavingCustomer = null;
@@ -433,7 +420,8 @@ public class RecordToRecord implements Solver {
                 }
                 if (saving >= 0.0) {
                     twoPointMove(i, j, c);
-                    return tourLength - saving;
+                    tourLength -= saving;
+                    return true;
                 } else if (saving > largestSaving) {
                     largestSaving = saving;
                     largestSavingCustomer = j;
@@ -442,9 +430,10 @@ public class RecordToRecord implements Solver {
         }
         if (tourLength - largestSaving <= record + deviation && rtr) {
             twoPointMove(i, largestSavingCustomer, c);
-            return tourLength - largestSaving;
+            tourLength -= largestSaving;
+            return true;
         }
-        return tourLength;
+        return false;
     }
 
     /**
@@ -503,13 +492,12 @@ public class RecordToRecord implements Solver {
      * Find two opt move in this route
      *
      * @param e          edge to find move with
-     * @param tourLength current length of the tour
      * @param Q          vehicle capacity
      * @param c          distance matrix
      * @param rtr        true if record to record must be applied, false for only downhill moves
      * @return new length of the tour
      */
-    private double findTwoOptMove(Edge e, double tourLength, int Q, double[][] c, boolean rtr) {
+    private boolean findTwoOptMove(Edge e, int Q, double[][] c, boolean rtr) {
 //        for (Route route : routes) {
 //            if (route != null && route.getRouteNumber() != routes[e.getRoute()].getRouteNumber()) {
 //                if (route.getWeight() + routes[e.getRoute()].getWeight() <= Q) {
@@ -534,7 +522,8 @@ public class RecordToRecord implements Solver {
                 // If it is profitable, perform the move
                 if (saving >= 0.0) {
                     routes[e.getRoute()].twoOptMove(e, f, c);
-                    return tourLength - saving;
+                    tourLength -= saving;
+                    return true;
                 } else if (saving > largestSaving) {
                     largestSaving = saving;
                     largestSavingEdge = f;
@@ -544,8 +533,9 @@ public class RecordToRecord implements Solver {
         // Perform least expensive move if record to record is true
         if (tourLength - largestSaving <= record + deviation && rtr) {
             routes[e.getRoute()].twoOptMove(e, largestSavingEdge, c);
-            return tourLength - largestSaving;
+            tourLength -= largestSaving;
+            return true;
         }
-        return tourLength;
+        return false;
     }
 }
