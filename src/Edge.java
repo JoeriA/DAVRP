@@ -56,6 +56,20 @@ public class Edge {
     }
 
     /**
+     * Create an edge between two customers
+     *
+     * @param i              start customer of edge
+     * @param j              end customer of edge
+     * @param distanceMatrix matrix with distances
+     */
+    public Edge(Customer i, Customer j, double[][] distanceMatrix) {
+
+        this.from = i;
+        this.to = j;
+        this.distance = distanceMatrix[i.getId()][j.getId()];
+    }
+
+    /**
      * Get a copy of this edge (hard copy without references)
      *
      * @return copy of this edge (hard copy without references)

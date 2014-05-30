@@ -11,6 +11,7 @@ public class RecordToRecord implements Solver {
     private double record;
     private double deviation;
     private double tourLength;
+    private boolean[][] neighborList;
 
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
@@ -31,29 +32,14 @@ public class RecordToRecord implements Solver {
 
         // Parameter
         double K = 5;
+        double alpha = 0.65;
 
         // Get some data from dataset
         int n = dataSet.getNumberOfCustomers() + 1;
-        int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
         double[][] c = dataSet.getTravelCosts();
         Customer[] customers = dataSet.getCustomers();
 
-        // Get largest demands
-        int[] demands = new int[n];
-        int highestDemand;
-        for (int i = 1; i < demands.length; i++) {
-            highestDemand = 0;
-            // Get highest demand of all scenarios
-            for (int k = 0; k < o; k++) {
-                if (customers[i].getDemandPerScenario()[k] > highestDemand) {
-                    highestDemand = customers[i].getDemandPerScenario()[k];
-                }
-            }
-            demands[i] = highestDemand;
-            customers[i].setDemand(highestDemand);
-        }
-        customers[0].setDemand(0);
 
         Long start = System.currentTimeMillis();
 
@@ -84,7 +70,7 @@ public class RecordToRecord implements Solver {
                         onePoint = findOnePointMove(i, Q, c, true);
                         twoPoint = findTwoPointMove(i, customers, Q, c, true);
                         r = routes[i.getRoute()];
-                        twoOpt = findTwoOptMove(r.getEdgeFrom(i), Q, c, true);
+                        twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), Q, c, true);
                         if (!onePoint && !twoPoint && !twoOpt) {
                             break loopI;
                         }
@@ -101,7 +87,7 @@ public class RecordToRecord implements Solver {
                         findOnePointMove(i, Q, c, false);
                         findTwoPointMove(i, customers, Q, c, false);
                         r = routes[i.getRoute()];
-                        findTwoOptMove(r.getEdgeFrom(i), Q, c, false);
+                        findTwoOptMoveNew(r.getEdgeFrom(i), Q, c, false);
                         // Update record when necessary
                         if (tourLength < record) {
                             record = tourLength;
@@ -498,13 +484,6 @@ public class RecordToRecord implements Solver {
      * @return new length of the tour
      */
     private boolean findTwoOptMove(Edge e, int Q, double[][] c, boolean rtr) {
-//        for (Route route : routes) {
-//            if (route != null && route.getRouteNumber() != routes[e.getRoute()].getRouteNumber()) {
-//                if (route.getWeight() + routes[e.getRoute()].getWeight() <= Q) {
-//                    System.out.println("Could perform two opt move between routes");
-//                }
-//            }
-//        }
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
@@ -537,5 +516,127 @@ public class RecordToRecord implements Solver {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Find two opt move in this route
+     *
+     * @param e   edge to find move with
+     * @param Q   vehicle capacity
+     * @param c   distance matrix
+     * @param rtr true if record to record must be applied, false for only downhill moves
+     * @return new length of the tour
+     */
+    private boolean findTwoOptMoveNew(Edge e, int Q, double[][] c, boolean rtr) {
+        double saving;
+        double largestSaving = Double.NEGATIVE_INFINITY;
+        Edge largestSavingEdge = null;
+        Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
+        // Calculate saving for two opt move with each other edge in the route
+        for (Route r : routes) {
+            if (r != null) {
+                for (Edge f : r.getEdges()) {
+                    saving = 0.0;
+                    startF = f.getFrom();
+                    endF = f.getTo();
+                    saving += e.getDistance();
+                    saving += f.getDistance();
+                    if (e.getRoute() == f.getRoute()) {
+                        saving -= c[startE.getId()][startF.getId()];
+                        saving -= c[endE.getId()][endF.getId()];
+                    } else {
+                        saving -= c[startE.getId()][endF.getId()];
+                        saving -= c[endE.getId()][startF.getId()];
+                    }
+                    // If it is profitable, perform the move
+                    if (saving >= 0.0 && twoOptMoveFeasible(e, f, Q)) {
+                        twoOptMove(e, f, c);
+                        tourLength -= saving;
+                        return true;
+                    } else if (saving > largestSaving && twoOptMoveFeasible(e, f, Q)) {
+                        largestSaving = saving;
+                        largestSavingEdge = f;
+                    }
+                }
+            }
+        }
+        // Perform least expensive move if record to record is true
+        if (tourLength - largestSaving <= record + deviation && rtr) {
+            twoOptMove(e, largestSavingEdge, c);
+            tourLength -= largestSaving;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean twoOptMove(Edge e, Edge f, double[][] c) {
+        if (e.getRoute() == f.getRoute()) {
+            routes[e.getRoute()].twoOptMove(e, f, c);
+            return true;
+        }
+        Route rE = routes[e.getRoute()];
+        Route rF = routes[f.getRoute()];
+        ArrayList<Edge> edgesR1 = new ArrayList<Edge>();
+        ArrayList<Edge> edgesR2 = new ArrayList<Edge>();
+        Customer next = e.getTo();
+        // Add edges to be removed from e and added to f to a list
+        while (next.getId() != 0) {
+            edgesR1.add(rE.getEdgeFrom(next));
+            next = rE.getEdgeFrom(next).getTo();
+        }
+        // Add edges to be removed from f and added to e to a list
+        next = f.getTo();
+        while (next.getId() != 0) {
+            edgesR2.add(rF.getEdgeFrom(next));
+            next = rF.getEdgeFrom(next).getTo();
+        }
+        // Perform move
+        rE.removeEdge(e);
+        rF.removeEdge(f);
+        for (Edge edge : edgesR1) {
+            rE.removeEdge(edge);
+        }
+        for (Edge edge : edgesR2) {
+            rF.removeEdge(edge);
+        }
+        for (Edge edge : edgesR1) {
+            rF.addEdge(edge);
+        }
+        for (Edge edge : edgesR2) {
+            rE.addEdge(edge);
+        }
+        rE.addEdge(new Edge(e.getFrom(), f.getTo(), c));
+        rF.addEdge(new Edge(f.getFrom(), e.getTo(), c));
+
+        return true;
+    }
+
+    private boolean twoOptMoveFeasible(Edge e, Edge f, int Q) {
+        if (e.equals(f)) {
+            return false;
+        }
+        if (e.getRoute() == f.getRoute()) {
+            return true;
+        }
+        Route rE = routes[e.getRoute()];
+        Route rF = routes[f.getRoute()];
+        int q1 = rE.getWeight();
+        int q2 = rF.getWeight();
+        Customer next = e.getTo();
+        // Add edges to be removed from e and added to f to a list
+        while (next.getId() != 0) {
+            q1 -= next.getDemand();
+            q2 += next.getDemand();
+            next = rE.getEdgeFrom(next).getTo();
+        }
+        // Add edges to be removed from f and added to e to a list
+        next = f.getTo();
+        while (next.getId() != 0) {
+            q1 += next.getDemand();
+            q2 -= next.getDemand();
+            next = rF.getEdgeFrom(next).getTo();
+        }
+        // Check if move is feasible
+        return !(q1 > Q || q2 > Q);
     }
 }
