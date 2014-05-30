@@ -7,8 +7,12 @@ import java.util.Collections;
  */
 public class ClarkeWright implements Solver {
 
-    // Parameter
-    double lambda;
+    private double lambda;
+    private Customer[] customers;
+    private int n;
+    private int Q;
+    private double[][] c;
+    private Solution solution;
 
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
@@ -34,32 +38,52 @@ public class ClarkeWright implements Solver {
      */
     public Solution solve(DataSet dataSet) {
 
-        Solution solution = new Solution();
+        solution = new Solution();
         solution.setName("Clarke-Wright heuristic");
 
         // Get some data from dataset
-        int n = dataSet.getNumberOfCustomers() + 1;
+        n = dataSet.getNumberOfCustomers() + 1;
         int o = dataSet.getNumberOfScenarios();
-        int Q = dataSet.getVehicleCapacity();
-        double[][] c = dataSet.getTravelCosts();
-        Customer[] customers = dataSet.getCustomers();
+        Q = dataSet.getVehicleCapacity();
+        c = dataSet.getTravelCosts();
+        customers = dataSet.getCustomers();
 
         // Get largest demands
-        int[] demands = new int[n];
         int highestDemand;
-        for (int i = 1; i < demands.length; i++) {
+        for (Customer c : customers) {
             highestDemand = 0;
             // Get highest demand of all scenarios
             for (int k = 0; k < o; k++) {
-                if (customers[i].getDemandPerScenario()[k] > highestDemand) {
-                    highestDemand = customers[i].getDemandPerScenario()[k];
+                if (c.getDemandPerScenario()[k] > highestDemand) {
+                    highestDemand = c.getDemandPerScenario()[k];
                 }
             }
-            demands[i] = highestDemand;
-            customers[i].setDemand(highestDemand);
+            c.setDemand(highestDemand);
         }
-        customers[0].setDemand(0);
 
+        return solve();
+    }
+
+    public Solution solve(DataSet dataSet, int scenario) {
+
+        solution = new Solution();
+        solution.setName("Clarke-Wright heuristic");
+
+        // Get some data from dataset
+        n = dataSet.getNumberOfCustomers() + 1;
+        Q = dataSet.getVehicleCapacity();
+        c = dataSet.getTravelCosts();
+        customers = dataSet.getCustomers();
+
+        // Get largest demands
+        for (Customer c : customers) {
+            c.setDemand(c.getDemandPerScenario()[scenario]);
+        }
+
+        return solve();
+    }
+
+    private Solution solve() {
         Long start = System.currentTimeMillis();
 
         Route[] routes = new Route[n - 1];

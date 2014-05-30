@@ -23,7 +23,7 @@ class DAVRP {
         Solver solver = new RecordToRecord();
 
         int start = 1;
-        int end = 125;
+        int end = 10;
 
         boolean silent = true;
 
