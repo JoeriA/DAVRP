@@ -284,7 +284,7 @@ public class Route {
                 addEdge(e);
             }
             // Add new edge from saving
-            addEdge(new Edge(customerI, customerJ, c[customerI.getId()][customerJ.getId()]));
+            addEdge(new Edge(customerI, customerJ, c));
 
             return true;
         } else if (afterDepot(customerI) && other.beforeDepot(customerJ)) {
@@ -297,7 +297,7 @@ public class Route {
                 e.setRoute(routeNumber);
             }
             // Add new edge from saving
-            addEdge(new Edge(customerJ, customerI, c[customerJ.getId()][customerI.getId()]));
+            addEdge(new Edge(customerJ, customerI, c));
 
             return true;
         } else {
@@ -340,11 +340,11 @@ public class Route {
             removeEdge(reverseCustomers.get(i), reverseCustomers.get(i + 1));
         }
         // Create new edges
-        addEdge(new Edge(firstEdge.getFrom(), secondEdge.getFrom(), c[firstEdge.getFrom().getId()][secondEdge.getFrom().getId()]));
+        addEdge(new Edge(firstEdge.getFrom(), secondEdge.getFrom(), c));
         for (int i = reverseCustomers.size() - 1; i > 0; i--) {
-            addEdge(new Edge(reverseCustomers.get(i), reverseCustomers.get(i - 1), c[reverseCustomers.get(i).getId()][reverseCustomers.get(i - 1).getId()]));
+            addEdge(new Edge(reverseCustomers.get(i), reverseCustomers.get(i - 1), c));
         }
-        addEdge(new Edge(firstEdge.getTo(), secondEdge.getTo(), c[firstEdge.getTo().getId()][secondEdge.getTo().getId()]));
+        addEdge(new Edge(firstEdge.getTo(), secondEdge.getTo(), c));
     }
 
     /**

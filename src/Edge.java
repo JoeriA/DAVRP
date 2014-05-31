@@ -44,20 +44,6 @@ public class Edge {
     /**
      * Create an edge between two customers
      *
-     * @param i        start customer of edge
-     * @param j        end customer of edge
-     * @param distance length of the edge
-     */
-    public Edge(Customer i, Customer j, double distance) {
-
-        this.from = i;
-        this.to = j;
-        this.distance = distance;
-    }
-
-    /**
-     * Create an edge between two customers
-     *
      * @param i              start customer of edge
      * @param j              end customer of edge
      * @param distanceMatrix matrix with distances

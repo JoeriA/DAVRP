@@ -12,7 +12,6 @@ public class ClarkeWright implements Solver {
     private int n;
     private int Q;
     private double[][] c;
-    private Solution solution;
 
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
@@ -37,9 +36,6 @@ public class ClarkeWright implements Solver {
      * @param dataSet dataset to be solved
      */
     public Solution solve(DataSet dataSet) {
-
-        solution = new Solution();
-        solution.setName("Clarke-Wright heuristic");
 
         // Get some data from dataset
         n = dataSet.getNumberOfCustomers() + 1;
@@ -66,9 +62,6 @@ public class ClarkeWright implements Solver {
 
     public Solution solve(DataSet dataSet, int scenario) {
 
-        solution = new Solution();
-        solution.setName("Clarke-Wright heuristic");
-
         // Get some data from dataset
         n = dataSet.getNumberOfCustomers() + 1;
         Q = dataSet.getVehicleCapacity();
@@ -84,6 +77,10 @@ public class ClarkeWright implements Solver {
     }
 
     private Solution solve() {
+
+        Solution solution = new Solution();
+        solution.setName("Clarke-Wright heuristic");
+
         Long start = System.currentTimeMillis();
 
         Route[] routes = new Route[n - 1];
@@ -92,9 +89,9 @@ public class ClarkeWright implements Solver {
             // Create route
             routes[i - 1] = new Route(n, i - 1);
             // Add edge from depot to customer
-            routes[i - 1].addEdge(new Edge(customers[0], customers[i], c[0][i]));
+            routes[i - 1].addEdge(new Edge(customers[0], customers[i], c));
             // Add edge from customer to depot
-            routes[i - 1].addEdge(new Edge(customers[i], customers[0], c[i][0]));
+            routes[i - 1].addEdge(new Edge(customers[i], customers[0], c));
         }
 
         // Calculate all possible savings
