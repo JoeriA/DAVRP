@@ -20,8 +20,8 @@ public class RecordToRecord implements Solver {
      */
     public RecordToRecord() {
         // Parameters
-        double K = 5;
-        double alpha = 0.6;
+        K = 5;
+        alpha = 0.6;
     }
 
     /**
@@ -30,6 +30,11 @@ public class RecordToRecord implements Solver {
      * @param dataSet dataset to be solved
      */
     public Solution solve(DataSet dataSet) {
+
+        return solve(dataSet, 0);
+    }
+
+    public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
         solution.setName("Record2Record");
@@ -69,7 +74,12 @@ public class RecordToRecord implements Solver {
 
         for (double lambda = 0.6; lambda <= 2.0; lambda += 0.2) {
             cw.setLambda(lambda);
-            Solution cwSolution = cw.solve(dataSet);
+            Solution cwSolution;
+            if (scenario == 0) {
+                cwSolution = cw.solve(dataSet);
+            } else {
+                cwSolution = cw.solve(dataSet, scenario);
+            }
             routes = cwSolution.getRoutes();
             record = cwSolution.getObjectiveValue();
             deviation = 0.01 * record;

@@ -31,7 +31,7 @@ public class ClarkeWright implements Solver {
     }
 
     /**
-     * Solve VRP for this dataset
+     * Solve VRP for this dataset for scenario with all largest demands
      *
      * @param dataSet dataset to be solved
      */
@@ -60,6 +60,13 @@ public class ClarkeWright implements Solver {
         return solve();
     }
 
+    /**
+     * Solve a VRP with Clarke-Wright for a certain scenario
+     *
+     * @param dataSet  dataset to be solved
+     * @param scenario scenario number (starting with 1)
+     * @return solution to the problem
+     */
     public Solution solve(DataSet dataSet, int scenario) {
 
         // Get some data from dataset
@@ -70,12 +77,16 @@ public class ClarkeWright implements Solver {
 
         // Get largest demands
         for (Customer c : customers) {
-            c.setDemand(c.getDemandPerScenario()[scenario]);
+            c.setDemand(c.getDemandPerScenario()[scenario - 1]);
         }
 
         return solve();
     }
 
+    /**
+     * Solve the VRP
+     * @return solution to the VRP
+     */
     private Solution solve() {
 
         Solution solution = new Solution();
