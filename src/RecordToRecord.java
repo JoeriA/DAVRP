@@ -3,7 +3,7 @@ import java.util.Collections;
 
 /**
  * Created by Joeri on 19-5-2014.
- * Implementation Clarke Wright heuristic
+ * Implementation record-to-record heuristic
  */
 public class RecordToRecord implements Solver {
 
@@ -16,7 +16,7 @@ public class RecordToRecord implements Solver {
     private double alpha;
 
     /**
-     * Implementation of Clarke-Wright heuristic for the DAVRP
+     * Implementation of record-to-record heuristic for the DAVRP
      */
     public RecordToRecord() {
         // Parameters
@@ -34,6 +34,13 @@ public class RecordToRecord implements Solver {
         return solve(dataSet, 0);
     }
 
+    /**
+     * Solve VRP for this scenario
+     *
+     * @param dataSet  dataset to be solved
+     * @param scenario number of scenario (starts with 1)
+     * @return solution to the dataset
+     */
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
@@ -77,10 +84,11 @@ public class RecordToRecord implements Solver {
             Solution cwSolution;
             if (scenario == 0) {
                 cwSolution = cw.solve(dataSet);
+                routes = cwSolution.getRoutes()[0];
             } else {
                 cwSolution = cw.solve(dataSet, scenario);
+                routes = cwSolution.getRoutes()[scenario - 1];
             }
-            routes = cwSolution.getRoutes();
             record = cwSolution.getObjectiveValue();
             deviation = 0.01 * record;
 
@@ -153,7 +161,15 @@ public class RecordToRecord implements Solver {
             }
         }
         solution.setObjectiveValue(costs);
-        solution.setRoutes(bestRoutes);
+        Route[][] sol = new Route[dataSet.getNumberOfScenarios()][];
+        if (scenario == 0) {
+            for (int i = 0; i < sol.length; i++) {
+                sol[i] = bestRoutes;
+            }
+        } else {
+            sol[scenario - 1] = bestRoutes;
+        }
+        solution.setRoutes(sol);
 
         return solution;
     }
@@ -261,10 +277,10 @@ public class RecordToRecord implements Solver {
     /**
      * Find one point move
      *
-     * @param i          point to move
-     * @param Q          vehicle capacity
-     * @param c          distance matrix
-     * @param rtr        true if record to record must be applied, false for only downhill moves
+     * @param i   point to move
+     * @param Q   vehicle capacity
+     * @param c   distance matrix
+     * @param rtr true if record to record must be applied, false for only downhill moves
      * @return true if a move is made, false otherwise
      */
     private boolean findOnePointMove(Customer i, int Q, double[][] c, boolean rtr) {
@@ -338,11 +354,11 @@ public class RecordToRecord implements Solver {
     /**
      * Find a two point move
      *
-     * @param i          first customer to move
-     * @param customers  arraylist of customers
-     * @param Q          vehicle capacity
-     * @param c          distance matrix
-     * @param rtr        true if record to record must be applied, false for only downhill moves
+     * @param i         first customer to move
+     * @param customers arraylist of customers
+     * @param Q         vehicle capacity
+     * @param c         distance matrix
+     * @param rtr       true if record to record must be applied, false for only downhill moves
      * @return true if a move is made, false otherwise
      */
     private boolean findTwoPointMove(Customer i, Customer[] customers, int Q, double[][] c, boolean rtr) {
@@ -593,6 +609,7 @@ public class RecordToRecord implements Solver {
 
     /**
      * Check whether specified two opt move is feasible
+     *
      * @param e first edge
      * @param f second edge
      * @param Q vehicle capacity

@@ -27,6 +27,9 @@ public class Frame extends JFrame implements ChangeListener {
     private DataSet dataSet;
     private Solution solution;
 
+    /**
+     * Create frame to draw results on
+     */
     public Frame() {
         setContentPane(mainPanel);
         setExtendedState(Window.MAXIMIZED_BOTH);
@@ -105,11 +108,21 @@ public class Frame extends JFrame implements ChangeListener {
         mainPanel.repaint();
     }
 
+    /**
+     * Add eventlistener to draw a certain scenario
+     *
+     * @param e eventlistener on spinner of scenarios
+     */
     @Override
     public void stateChanged(ChangeEvent e) {
         drawScenario((Integer) spinner1.getValue() - 1);
     }
 
+    /**
+     * Draw results of solution (details and first scenario)
+     *
+     * @param solution solution to draw
+     */
     public void drawResults(Solution solution) {
         this.solution = solution;
 
@@ -134,6 +147,9 @@ public class Frame extends JFrame implements ChangeListener {
         drawScenario(0);
     }
 
+    /**
+     * Draw assignments
+     */
     private void drawAssignments() {
 
         setVisible(true);
@@ -205,6 +221,11 @@ public class Frame extends JFrame implements ChangeListener {
         }
     }
 
+    /**
+     * Draw a scenario
+     *
+     * @param scenario scenario to draw (starts with 0)
+     */
     private void drawScenario(int scenario) {
 
         setVisible(true);
@@ -219,7 +240,7 @@ public class Frame extends JFrame implements ChangeListener {
             int x1, x2, y1, y2;
 
             // Add lines on driven routesImg
-            for (Route r : solution.getRoutes()) {
+            for (Route r : solution.getRoutes()[scenario]) {
                 if (r != null) {
                     for (Edge e : r.getEdges()) {
                         x1 = transformX(e.getFrom().getxCoordinate());

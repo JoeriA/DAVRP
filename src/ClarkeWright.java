@@ -57,7 +57,7 @@ public class ClarkeWright implements Solver {
             c.setDemand(highestDemand);
         }
 
-        return solve();
+        return solve(o);
     }
 
     /**
@@ -80,14 +80,15 @@ public class ClarkeWright implements Solver {
             c.setDemand(c.getDemandPerScenario()[scenario - 1]);
         }
 
-        return solve();
+        return solve(dataSet.getNumberOfScenarios());
     }
 
     /**
      * Solve the VRP
+     *
      * @return solution to the VRP
      */
-    private Solution solve() {
+    private Solution solve(int nrOfScenarios) {
 
         Solution solution = new Solution();
         solution.setName("Clarke-Wright heuristic");
@@ -148,7 +149,11 @@ public class ClarkeWright implements Solver {
             }
         }
         solution.setObjectiveValue(costs);
-        solution.setRoutes(routes);
+        Route[][] scenarioRoutes = new Route[nrOfScenarios][];
+        for (int i = 0; i < nrOfScenarios; i++) {
+            scenarioRoutes[i] = routes;
+        }
+        solution.setRoutes(scenarioRoutes);
 
         return solution;
     }

@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMerger2 {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "CPLEX largest", "Record2Record"};
+    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "CPLEX largest", "Record2Record", "RTR_LB"};
     private static double[][] runTimeData;
 
     /**

@@ -6,7 +6,7 @@ import java.io.FileWriter;
 
 /**
  * Created by Joeri on 11-4-2014.
- * <p/>
+ *
  * Main file for the DAVRP problem solver
  */
 class DAVRP {
@@ -21,6 +21,7 @@ class DAVRP {
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
         Solver solver = new RecordToRecord();
+//        Solver solver = new RecordToRecordLowerBound();
 
         int start = 1;
         int end = 125;
