@@ -32,7 +32,7 @@ class DAVRP {
         int start = 65;
         int end = 65;
 
-        boolean silent = false;
+        boolean silent = true;
 
         DataReader dataReader = new DataReader();
         DataSet dataSet;

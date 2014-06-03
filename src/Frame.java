@@ -240,7 +240,7 @@ public class Frame extends JFrame implements ChangeListener {
             int x1, x2, y1, y2;
 
             // Add lines on driven routesImg
-            for (Route r : solution.getRoutes()[scenario]) {
+            for (Route r : solution.getRoutes()[scenario].getRoutes()) {
                 if (r != null) {
                     for (Edge e : r.getEdges()) {
                         x1 = transformX(e.getFrom().getxCoordinate());

@@ -149,9 +149,13 @@ public class ClarkeWright implements Solver {
             }
         }
         solution.setObjectiveValue(costs);
-        Route[][] scenarioRoutes = new Route[nrOfScenarios][];
+        RouteSet[] scenarioRoutes = new RouteSet[nrOfScenarios];
+        RouteSet sol = new RouteSet();
+        sol.setCustomers(customers);
+        sol.setRoutes(routes);
+        sol.setRouteLength(costs);
         for (int i = 0; i < nrOfScenarios; i++) {
-            scenarioRoutes[i] = routes;
+            scenarioRoutes[i] = sol;
         }
         solution.setRoutes(scenarioRoutes);
 

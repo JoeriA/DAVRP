@@ -20,7 +20,7 @@ public class RecordToRecordLowerBound implements Solver {
 
         Solution solution = new Solution();
         solution.setName("RTR_LB");
-        Route[][] routes = new Route[dataSet.getNumberOfScenarios()][];
+        RouteSet[] routes = new RouteSet[dataSet.getNumberOfScenarios()];
         RecordToRecord rtr = new RecordToRecord();
         Solution temp;
         double costs = 0.0;

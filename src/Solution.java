@@ -9,7 +9,7 @@ public class Solution {
     private double[][] zSol;
     private double objectiveValue, runTime, gap;
     private String name;
-    private Route[][] routes;
+    private RouteSet[] routes;
 
     /**
      * Create an empty solution
@@ -23,7 +23,7 @@ public class Solution {
      *
      * @return all routes in this solution
      */
-    public Route[][] getRoutes() {
+    public RouteSet[] getRoutes() {
         return routes;
     }
 
@@ -32,7 +32,7 @@ public class Solution {
      *
      * @param routes all routes in this solution
      */
-    public void setRoutes(Route[][] routes) {
+    public void setRoutes(RouteSet[] routes) {
         this.routes = routes;
     }
 

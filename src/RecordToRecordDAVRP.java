@@ -5,7 +5,7 @@ import java.util.Collections;
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
  */
-public class RecordToRecord implements Solver {
+public class RecordToRecordDAVRP implements Solver {
 
     private double record;
     private double deviation;
@@ -17,7 +17,7 @@ public class RecordToRecord implements Solver {
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecord() {
+    public RecordToRecordDAVRP() {
         // Parameters
         K = 5;
         alpha = 0.6;
@@ -30,23 +30,12 @@ public class RecordToRecord implements Solver {
      */
     public Solution solve(DataSet dataSet) {
 
-        return solve(dataSet, 0);
-    }
-
-    /**
-     * Solve VRP for this scenario
-     *
-     * @param dataSet  data set to be solved
-     * @param scenario number of scenario (starts with 1)
-     * @return solution to the data set
-     */
-    public Solution solve(DataSet dataSet, int scenario) {
-
         Solution solution = new Solution();
         solution.setName("Record2Record");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
+        int o = dataSet.getNumberOfScenarios();
         int Q = dataSet.getVehicleCapacity();
         double[][] c = dataSet.getTravelCosts();
 
@@ -80,17 +69,17 @@ public class RecordToRecord implements Solver {
         double initialRecord;
         Route r;
 
-        for (double lambda = 0.6; lambda <= 2.0; lambda += 0.2) {
-            cw.setLambda(lambda);
-            Solution cwSolution;
-            if (scenario == 0) {
-                cwSolution = cw.solve(dataSet);
-                routeSet = cwSolution.getRoutes()[0];
-            } else {
-                cwSolution = cw.solve(dataSet, scenario);
-                routeSet = cwSolution.getRoutes()[scenario - 1];
-            }
-            record = cwSolution.getObjectiveValue();
+        RecordToRecord rtr = new RecordToRecord();
+        Solution solutionBasis = rtr.solve(dataSet);
+        RouteSet routeSetBasis = new RouteSet();
+        // TODO fill routeSetBasis
+
+
+        for (int scenario = 0; scenario < o; scenario++) {
+
+            routeSet = routeSetBasis.getCopy();
+
+            record = routeSet.getRouteLength();
             deviation = 0.01 * record;
 
             routeSet.setRouteLength(record);
@@ -147,19 +136,13 @@ public class RecordToRecord implements Solver {
             if (routeSet.getRouteLength() < bestRouteSet.getRouteLength()) {
                 bestRouteSet = routeSet.getCopy();
             }
+            // TODO add solution to solutions
         }
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
-        solution.setObjectiveValue(bestRouteSet.getRouteLength());
-        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
-        if (scenario == 0) {
-            for (int i = 0; i < sol.length; i++) {
-                sol[i] = bestRouteSet;
-            }
-        } else {
-            sol[scenario - 1] = bestRouteSet;
-        }
-        solution.setRoutes(sol);
+
+        // TODO add solutions
+        // TODO add objective value
 
         return solution;
     }
