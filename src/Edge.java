@@ -44,6 +44,20 @@ public class Edge {
     /**
      * Create an edge between two customers
      *
+     * @param i        start customer of edge
+     * @param j        end customer of edge
+     * @param distance length of the edge
+     */
+    public Edge(Customer i, Customer j, double distance) {
+
+        this.from = i;
+        this.to = j;
+        this.distance = distance;
+    }
+
+    /**
+     * Create an edge between two customers
+     *
      * @param i              start customer of edge
      * @param j              end customer of edge
      * @param distanceMatrix matrix with distances
@@ -53,6 +67,22 @@ public class Edge {
         this.from = i;
         this.to = j;
         this.distance = distanceMatrix[i.getId()][j.getId()];
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof Edge) {
+            Edge e = (Edge) other;
+            if (from.getId() == e.getFrom().getId() && to.getId() == e.getTo().getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return 10000 * from.getId() + to.getId();
     }
 
     /**
@@ -108,4 +138,5 @@ public class Edge {
     public double getDistance() {
         return distance;
     }
+
 }

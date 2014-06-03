@@ -7,13 +7,12 @@ import java.util.Collections;
  */
 public class RecordToRecord implements Solver {
 
-    private Route[] routes;
     private double record;
     private double deviation;
-    private double tourLength;
     private boolean[][] neighborList;
     private double K;
     private double alpha;
+    private RouteSet routeSet;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
@@ -50,7 +49,11 @@ public class RecordToRecord implements Solver {
         int n = dataSet.getNumberOfCustomers() + 1;
         int Q = dataSet.getVehicleCapacity();
         double[][] c = dataSet.getTravelCosts();
-        Customer[] customers = dataSet.getCustomers();
+
+        routeSet = new RouteSet();
+        routeSet.setCustomers(dataSet.getCustomers());
+
+        Long start = System.currentTimeMillis();
 
         // Create neigbor list
         neighborList = new boolean[n][n];
@@ -70,12 +73,10 @@ public class RecordToRecord implements Solver {
             }
         }
 
-        Long start = System.currentTimeMillis();
-
         ClarkeWright cw = new ClarkeWright();
 
-        Route[] bestRoutes = null;
-        double bestValue = Double.POSITIVE_INFINITY;
+        RouteSet bestRouteSet = new RouteSet();
+        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
         double initialRecord;
         Route r;
 
@@ -84,15 +85,15 @@ public class RecordToRecord implements Solver {
             Solution cwSolution;
             if (scenario == 0) {
                 cwSolution = cw.solve(dataSet);
-                routes = cwSolution.getRoutes()[0];
+                routeSet.setRoutes(cwSolution.getRoutes()[0]);
             } else {
                 cwSolution = cw.solve(dataSet, scenario);
-                routes = cwSolution.getRoutes()[scenario - 1];
+                routeSet.setRoutes(cwSolution.getRoutes()[scenario - 1]);
             }
             record = cwSolution.getObjectiveValue();
             deviation = 0.01 * record;
 
-            tourLength = record;
+            routeSet.setRouteLength(record);
             boolean onePoint, twoPoint, twoOpt;
 
             // Start improvement iterations
@@ -100,32 +101,32 @@ public class RecordToRecord implements Solver {
                 initialRecord = record;
                 // Moves with record to record
                 loopI:
-                for (Customer i : customers) {
+                for (Customer i : routeSet.getCustomers()) {
                     if (i.getId() != 0) {
                         onePoint = findOnePointMove(i, Q, c, true);
-                        twoPoint = findTwoPointMove(i, customers, Q, c, true);
-                        r = routes[i.getRoute()];
+                        twoPoint = findTwoPointMove(i, Q, c, true);
+                        r = routeSet.getRoutes()[i.getRoute()];
                         twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), Q, c, true);
                         if (!onePoint && !twoPoint && !twoOpt) {
                             break loopI;
                         }
                         // Update record when necessary
-                        if (tourLength < record) {
-                            record = tourLength;
+                        if (routeSet.getRouteLength() < record) {
+                            record = routeSet.getRouteLength();
                             deviation = 0.01 * record;
                         }
                     }
                 }
                 // Downhill moves
-                for (Customer i : customers) {
+                for (Customer i : routeSet.getCustomers()) {
                     if (i.getId() != 0) {
                         findOnePointMove(i, Q, c, false);
-                        findTwoPointMove(i, customers, Q, c, false);
-                        r = routes[i.getRoute()];
+                        findTwoPointMove(i, Q, c, false);
+                        r = routeSet.getRoutes()[i.getRoute()];
                         findTwoOptMoveNew(r.getEdgeFrom(i), Q, c, false);
                         // Update record when necessary
-                        if (tourLength < record) {
-                            record = tourLength;
+                        if (routeSet.getRouteLength() < record) {
+                            record = routeSet.getRouteLength();
                             deviation = 0.01 * record;
                         }
                     }
@@ -136,38 +137,28 @@ public class RecordToRecord implements Solver {
                 }
             }
             // Create copy before perturbing
-            Route[] routeCopy = copyRoutes();
-            double tourLengthCopy = tourLength;
+            RouteSet routeCopy = routeSet.getCopy();
             // Perturb the solution
-            tourLength = perturb(customers, tourLength, Q, c);
+            perturb(Q, c);
             // Restore copy if perturbing results in worse solution
-            if (tourLengthCopy < tourLength) {
-                routes = routeCopy;
-                tourLength = tourLengthCopy;
+            if (routeCopy.getRouteLength() < routeSet.getRouteLength()) {
+                routeSet = routeCopy;
             }
             // Check if this solution is better than best solution
-            if (tourLength < bestValue) {
-                bestRoutes = copyRoutes();
-                bestValue = tourLength;
+            if (routeSet.getRouteLength() < bestRouteSet.getRouteLength()) {
+                bestRouteSet = routeSet;
             }
         }
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
-        // Calculate costs
-        double costs = 0;
-        for (Route route : bestRoutes) {
-            if (route != null) {
-                costs += route.getCosts();
-            }
-        }
-        solution.setObjectiveValue(costs);
+        solution.setObjectiveValue(bestRouteSet.getRouteLength());
         Route[][] sol = new Route[dataSet.getNumberOfScenarios()][];
         if (scenario == 0) {
             for (int i = 0; i < sol.length; i++) {
-                sol[i] = bestRoutes;
+                sol[i] = bestRouteSet.getRoutes();
             }
         } else {
-            sol[scenario - 1] = bestRoutes;
+            sol[scenario - 1] = bestRouteSet.getRoutes();
         }
         solution.setRoutes(sol);
 
@@ -175,38 +166,21 @@ public class RecordToRecord implements Solver {
     }
 
     /**
-     * Create a copy of the routes (hard copy without references)
-     *
-     * @return copy of the routes (hard copy without references)
-     */
-    private Route[] copyRoutes() {
-        Route[] newRoutes = new Route[routes.length];
-        for (int i = 0; i < routes.length; i++) {
-            if (routes[i] != null) {
-                newRoutes[i] = routes[i].getCopy();
-            }
-        }
-        return newRoutes;
-    }
-
-    /**
      * Perturb the solution
      *
-     * @param customers  arraylist of customers
-     * @param tourLength current length of the tour
      * @param Q          vehicle capacity
      * @param c          distance matrix
      * @return new length of the tour
      */
-    private double perturb(Customer[] customers, double tourLength, int Q, double[][] c) {
+    private void perturb(int Q, double[][] c) {
         ArrayList<Customer> perturbC = new ArrayList<Customer>();
         Route route;
         Customer customer;
         double sI;
-        for (int i = 1; i < customers.length; i++) {
+        for (int i = 1; i < routeSet.getCustomers().length; i++) {
             sI = 0.0;
-            customer = customers[i];
-            route = routes[customers[i].getRoute()];
+            customer = routeSet.getCustomers()[i];
+            route = routeSet.getRoutes()[routeSet.getCustomers()[i].getRoute()];
             sI += route.getEdgeTo(customer).getDistance();
             sI += route.getEdgeFrom(customer).getDistance();
             sI -= c[route.getEdgeTo(customer).getFrom().getId()][route.getEdgeFrom(customer).getTo().getId()];
@@ -215,14 +189,13 @@ public class RecordToRecord implements Solver {
         }
         Collections.sort(perturbC, new CustomerComparator());
 
-        int m = Math.min(20, customers.length / 10);
+        int m = Math.min(20, routeSet.getCustomers().length / 10);
         double saving = 0.0;
         for (int j = 0; j < m; j++) {
             customer = perturbC.get(j);
             saving += applyBestInsertion(customer, Q, c);
         }
-        tourLength -= saving;
-        return tourLength - saving;
+        routeSet.setRouteLength(routeSet.getRouteLength() - saving);
     }
 
     /**
@@ -237,7 +210,7 @@ public class RecordToRecord implements Solver {
 
         double totalSaving = 0.0;
         // Remove customer from its route
-        Route r = routes[customer.getRoute()];
+        Route r = routeSet.getRoutes()[customer.getRoute()];
         Customer from = r.getEdgeTo(customer).getFrom();
         Customer to = r.getEdgeFrom(customer).getTo();
         totalSaving += r.getEdgeTo(customer).getDistance();
@@ -252,7 +225,7 @@ public class RecordToRecord implements Solver {
         double saving;
         Edge bestEdge = null;
         // Iterate over all edges to find cheapest insertion
-        for (Route route : routes) {
+        for (Route route : routeSet.getRoutes()) {
             if (route != null) {
                 for (Edge e : route.getEdges()) {
                     saving = 0.0;
@@ -267,7 +240,7 @@ public class RecordToRecord implements Solver {
             }
         }
         // Perform cheapest insertion
-        r = routes[bestEdge.getRoute()];
+        r = routeSet.getRoutes()[bestEdge.getRoute()];
         r.removeEdge(bestEdge);
         r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
         r.addEdge(new Edge(customer, bestEdge.getTo(), c));
@@ -287,8 +260,8 @@ public class RecordToRecord implements Solver {
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
-        Route iRoute = routes[i.getRoute()];
-        for (Route r : routes) {
+        Route iRoute = routeSet.getRoutes()[i.getRoute()];
+        for (Route r : routeSet.getRoutes()) {
             if (r != null) {
                 for (Edge e : r.getEdges()) {
                     if (neighborList[i.getId()][e.getFrom().getId()] || neighborList[i.getId()][e.getTo().getId()]) {
@@ -305,7 +278,7 @@ public class RecordToRecord implements Solver {
                             saving -= c[i.getId()][e.getTo().getId()];
                             if (saving >= 0.0) {
                                 onePointMove(i, e, c);
-                                tourLength -= saving;
+                                routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                                 return true;
                             } else if (saving > largestSaving) {
                                 largestSaving = saving;
@@ -316,9 +289,9 @@ public class RecordToRecord implements Solver {
                 }
             }
         }
-        if (tourLength - largestSaving <= record + deviation && rtr) {
+        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
             onePointMove(i, largestSavingEdge, c);
-            tourLength -= largestSaving;
+            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
             return true;
         }
         return false;
@@ -332,14 +305,14 @@ public class RecordToRecord implements Solver {
      * @param c distance matrix
      */
     private void onePointMove(Customer i, Edge e, double[][] c) {
-        Route iRoute = routes[i.getRoute()];
-        Route r = routes[e.getRoute()];
+        Route iRoute = routeSet.getRoutes()[i.getRoute()];
+        Route r = routeSet.getRoutes()[e.getRoute()];
         Customer to, from;
         // Remove customer i from its current route
         from = iRoute.getEdgeTo(i).getFrom();
         to = iRoute.getEdgeFrom(i).getTo();
         if (from.getId() == 0 && to.getId() == 0) {
-            routes[i.getRoute()] = null;
+            routeSet.getRoutes()[i.getRoute()] = null;
         } else {
             iRoute.removeEdgeTo(i);
             iRoute.removeEdgeFrom(i);
@@ -355,25 +328,24 @@ public class RecordToRecord implements Solver {
      * Find a two point move
      *
      * @param i         first customer to move
-     * @param customers arraylist of customers
      * @param Q         vehicle capacity
      * @param c         distance matrix
      * @param rtr       true if record to record must be applied, false for only downhill moves
      * @return true if a move is made, false otherwise
      */
-    private boolean findTwoPointMove(Customer i, Customer[] customers, int Q, double[][] c, boolean rtr) {
+    private boolean findTwoPointMove(Customer i, int Q, double[][] c, boolean rtr) {
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Customer largestSavingCustomer = null;
-        Route iRoute = routes[i.getRoute()];
+        Route iRoute = routeSet.getRoutes()[i.getRoute()];
         Route jRoute;
 
         // For all customers
-        for (Customer j : customers) {
+        for (Customer j : routeSet.getCustomers()) {
             if (neighborList[i.getId()][j.getId()]) {
                 // Not if customers are the same or other customer is a depot
                 if (i.getId() != j.getId() && j.getId() != 0) {
-                    jRoute = routes[j.getRoute()];
+                    jRoute = routeSet.getRoutes()[j.getRoute()];
                     saving = 0.0;
                     // Save info
                     Customer beforeI = iRoute.getEdgeTo(i).getFrom();
@@ -435,7 +407,7 @@ public class RecordToRecord implements Solver {
                     }
                     if (saving >= 0.0) {
                         twoPointMove(i, j, c);
-                        tourLength -= saving;
+                        routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                         return true;
                     } else if (saving > largestSaving) {
                         largestSaving = saving;
@@ -444,9 +416,9 @@ public class RecordToRecord implements Solver {
                 }
             }
         }
-        if (tourLength - largestSaving <= record + deviation && rtr) {
+        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
             twoPointMove(i, largestSavingCustomer, c);
-            tourLength -= largestSaving;
+            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
             return true;
         }
         return false;
@@ -460,8 +432,8 @@ public class RecordToRecord implements Solver {
      * @param c distance matrix
      */
     private void twoPointMove(Customer i, Customer j, double[][] c) {
-        Route iRoute = routes[i.getRoute()];
-        Route jRoute = routes[j.getRoute()];
+        Route iRoute = routeSet.getRoutes()[i.getRoute()];
+        Route jRoute = routeSet.getRoutes()[j.getRoute()];
         Customer beforeI, afterI, beforeJ, afterJ;
 
         // Save info
@@ -519,7 +491,7 @@ public class RecordToRecord implements Solver {
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
         // Calculate saving for two opt move with each other edge in the route
-        for (Route r : routes) {
+        for (Route r : routeSet.getRoutes()) {
             if (r != null) {
                 for (Edge f : r.getEdges()) {
                     if (neighborList[e.getFrom().getId()][f.getFrom().getId()] || neighborList[e.getFrom().getId()][f.getTo().getId()]) {
@@ -538,7 +510,7 @@ public class RecordToRecord implements Solver {
                         // If it is profitable, perform the move
                         if (saving >= 0.0 && twoOptMoveFeasible(e, f, Q)) {
                             twoOptMove(e, f, c);
-                            tourLength -= saving;
+                            routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                             return true;
                         } else if (saving > largestSaving && twoOptMoveFeasible(e, f, Q)) {
                             largestSaving = saving;
@@ -549,9 +521,9 @@ public class RecordToRecord implements Solver {
             }
         }
         // Perform least expensive move if record to record is true
-        if (tourLength - largestSaving <= record + deviation && rtr) {
+        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
             twoOptMove(e, largestSavingEdge, c);
-            tourLength -= largestSaving;
+            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
             return true;
         }
         return false;
@@ -567,11 +539,11 @@ public class RecordToRecord implements Solver {
      */
     private boolean twoOptMove(Edge e, Edge f, double[][] c) {
         if (e.getRoute() == f.getRoute()) {
-            routes[e.getRoute()].twoOptMove(e, f, c);
+            routeSet.getRoutes()[e.getRoute()].twoOptMove(e, f, c);
             return true;
         }
-        Route rE = routes[e.getRoute()];
-        Route rF = routes[f.getRoute()];
+        Route rE = routeSet.getRoutes()[e.getRoute()];
+        Route rF = routeSet.getRoutes()[f.getRoute()];
         ArrayList<Edge> edgesR1 = new ArrayList<Edge>();
         ArrayList<Edge> edgesR2 = new ArrayList<Edge>();
         Customer next = e.getTo();
@@ -622,8 +594,8 @@ public class RecordToRecord implements Solver {
         if (e.getRoute() == f.getRoute()) {
             return true;
         }
-        Route rE = routes[e.getRoute()];
-        Route rF = routes[f.getRoute()];
+        Route rE = routeSet.getRoutes()[e.getRoute()];
+        Route rF = routeSet.getRoutes()[f.getRoute()];
         int q1 = rE.getWeight();
         int q2 = rF.getWeight();
         Customer next = e.getTo();

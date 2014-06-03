@@ -56,29 +56,39 @@ public class Route {
      *
      * @return copy of this route (hard copy without references)
      */
-    public Route getCopy() {
+    public Route getCopy(Customer[] newCustomers) {
         int n = customers.length;
         // Create copy of all customers
         Customer[] customersCopy = new Customer[n];
         for (int i = 0; i < n; i++) {
             if (customers[i] != null) {
-                customersCopy[i] = customers[i].getCopy();
+                customersCopy[i] = newCustomers[i];
             }
         }
         // Create copy of all edges
         Edge[] inEdgesCopy = new Edge[n];
         Edge[] outEdgesCopy = new Edge[n];
         ArrayList<Edge> edgesCopy = new ArrayList<Edge>(edges.size());
-        for (int i = 0; i < n; i++) {
-            if (inEdges[i] != null) {
-                inEdgesCopy[i] = inEdges[i].getCopy();
-                edgesCopy.add(inEdgesCopy[i]);
-            }
-            if (outEdges[i] != null) {
-                outEdgesCopy[i] = outEdges[i].getCopy();
-                edgesCopy.add(outEdgesCopy[i]);
-            }
+        Edge newEdge;
+        Customer from, to;
+        for (Edge e : edges) {
+            from = customersCopy[e.getFrom().getId()];
+            to = customersCopy[e.getTo().getId()];
+            newEdge = new Edge(from, to, e.getDistance());
+            edgesCopy.add(newEdge);
+            inEdges[to.getId()] = newEdge;
+            outEdges[from.getId()] = newEdge;
         }
+//        for (int i = 0; i < n; i++) {
+//            if (inEdges[i] != null) {
+//                inEdgesCopy[i] = inEdges[i].getCopy();
+//                edgesCopy.add(inEdgesCopy[i]);
+//            }
+//            if (outEdges[i] != null) {
+//                outEdgesCopy[i] = outEdges[i].getCopy();
+//                edgesCopy.add(outEdgesCopy[i]);
+//            }
+//        }
         return new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, routeNumber);
     }
 
@@ -354,6 +364,9 @@ public class Route {
      * @return edge to the given customer
      */
     public Edge getEdgeFrom(Customer i) {
+        if (outEdges[i.getId()] == null) {
+            System.out.println("Edge does not exist");
+        }
         return outEdges[i.getId()];
     }
 
@@ -364,6 +377,9 @@ public class Route {
      * @return edge from the given customer
      */
     public Edge getEdgeTo(Customer j) {
+        if (inEdges[j.getId()] == null) {
+            System.out.println("Edge does not exist");
+        }
         return inEdges[j.getId()];
     }
 
