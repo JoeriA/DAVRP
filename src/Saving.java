@@ -1,6 +1,5 @@
 /**
  * Created by Joeri on 19-5-2014.
- * <p/>
  * Class for savings (for Clarke-Wright heuristic)
  */
 public class Saving implements Comparable<Saving> {
@@ -48,10 +47,13 @@ public class Saving implements Comparable<Saving> {
         return saving;
     }
 
-    @Override
     /**
-     * Custom compareTo to sort the savings on the value of the saving
+     * Compare two savings with each other on value
+     *
+     * @param o other saving
+     * @return 1 if other saving is bigger, 0 if equal and -1 otherwise
      */
+    @Override
     public int compareTo(Saving o) {
         if (o.getSaving() < this.saving) {
             return -1;

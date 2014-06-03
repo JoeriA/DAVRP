@@ -3,7 +3,6 @@ import ilog.concert.IloException;
 
 /**
  * Created by Joeri on 29-4-2014.
- * <p/>
  * Class defining how solvers should behave
  */
 

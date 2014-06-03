@@ -2,7 +2,6 @@ import java.util.ArrayList;
 
 /**
  * Created by Joeri on 19-5-2014.
- * <p/>
  * Class for storing all info of a route
  */
 public class Route {
@@ -75,6 +74,7 @@ public class Route {
             from = customersCopy[e.getFrom().getId()];
             to = customersCopy[e.getTo().getId()];
             newEdge = new Edge(from, to, e.getDistance());
+            newEdge.setRoute(routeNumber);
             edgesCopy.add(newEdge);
             inEdges[to.getId()] = newEdge;
             outEdges[from.getId()] = newEdge;

@@ -167,10 +167,20 @@ public class DataSet {
         this.scenarioProbabilities = scenarioProbabilities;
     }
 
+    /**
+     * Get name of the instance
+     *
+     * @return name of the instance
+     */
     public String getInstance() {
         return instance;
     }
 
+    /**
+     * Set name of the instance
+     *
+     * @param instance name of the instance
+     */
     public void setInstance(String instance) {
         this.instance = instance;
     }

@@ -49,11 +49,8 @@ public class Customer {
      */
     public Customer getCopy() {
         int[] demandPerScenarioCopy = new int[demandPerScenario.length];
-        for (int i = 0; i < demandPerScenario.length; i++) {
-            demandPerScenarioCopy[i] = demandPerScenario[i];
-        }
-        Customer copy = new Customer(id, xCoordinate, yCoordinate, demandPerScenarioCopy, demand, route, r);
-        return copy;
+        System.arraycopy(demandPerScenario, 0, demandPerScenarioCopy, 0, demandPerScenario.length);
+        return new Customer(id, xCoordinate, yCoordinate, demandPerScenarioCopy, demand, route, r);
     }
 
     /**

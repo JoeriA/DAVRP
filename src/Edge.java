@@ -27,21 +27,6 @@ public class Edge {
     }
 
     /**
-     * Create an edge between two customers (used for creating a copy)
-     *
-     * @param i        start customer of edge
-     * @param j        end customer of edge
-     * @param distance length of the edge
-     * @param route    number of the route in which this edge is located
-     */
-    private Edge(Customer i, Customer j, double distance, int route) {
-        this.from = i;
-        this.to = j;
-        this.distance = distance;
-        this.route = route;
-    }
-
-    /**
      * Create an edge between two customers
      *
      * @param i        start customer of edge
@@ -69,6 +54,12 @@ public class Edge {
         this.distance = distanceMatrix[i.getId()][j.getId()];
     }
 
+    /**
+     * Override equals. Checks whether a given edge is the same (same start and end)
+     *
+     * @param other other edge to check
+     * @return true when edge is the same, false otherwise
+     */
     @Override
     public boolean equals(Object other) {
         if (other instanceof Edge) {
@@ -80,18 +71,15 @@ public class Edge {
         return false;
     }
 
+    /**
+     * Override hashcode (because of changed equals)
+     * Works with up to 10000 customers
+     *
+     * @return hashcode
+     */
     @Override
     public int hashCode() {
         return 10000 * from.getId() + to.getId();
-    }
-
-    /**
-     * Get a copy of this edge (hard copy without references)
-     *
-     * @return copy of this edge (hard copy without references)
-     */
-    public Edge getCopy() {
-        return new Edge(from.getCopy(), to.getCopy(), distance, route);
     }
 
     /**

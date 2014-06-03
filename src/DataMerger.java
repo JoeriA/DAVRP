@@ -18,7 +18,7 @@ public class DataMerger {
         int nrOfInstances = 65 + 60 * 3;
         mergedData = new String[nrOfInstances][][];
 
-        // Get
+        // Get info
         int nrArray = 0;
         for (int i = 1; i <= 15; i++) {
             readInstanceSingle("" + i, nrArray);

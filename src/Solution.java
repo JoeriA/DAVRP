@@ -1,6 +1,5 @@
 /**
  * Created by Joeri on 12-5-2014.
- * <p/>
  * Class for storing the solution of a solver
  */
 public class Solution {

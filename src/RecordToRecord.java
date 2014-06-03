@@ -24,9 +24,9 @@ public class RecordToRecord implements Solver {
     }
 
     /**
-     * Solve VRP for this dataset
+     * Solve VRP for this data set
      *
-     * @param dataSet dataset to be solved
+     * @param dataSet data set to be solved
      */
     public Solution solve(DataSet dataSet) {
 
@@ -36,16 +36,16 @@ public class RecordToRecord implements Solver {
     /**
      * Solve VRP for this scenario
      *
-     * @param dataSet  dataset to be solved
+     * @param dataSet  data set to be solved
      * @param scenario number of scenario (starts with 1)
-     * @return solution to the dataset
+     * @return solution to the data set
      */
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
         solution.setName("Record2Record");
 
-        // Get some data from dataset
+        // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
         int Q = dataSet.getVehicleCapacity();
         double[][] c = dataSet.getTravelCosts();
@@ -55,7 +55,7 @@ public class RecordToRecord implements Solver {
 
         Long start = System.currentTimeMillis();
 
-        // Create neigbor list
+        // Create neighbor list
         neighborList = new boolean[n][n];
         double largestDistance;
         for (int i = 0; i < n; i++) {
@@ -100,7 +100,6 @@ public class RecordToRecord implements Solver {
             for (int k = 0; k < K; k++) {
                 initialRecord = record;
                 // Moves with record to record
-                loopI:
                 for (Customer i : routeSet.getCustomers()) {
                     if (i.getId() != 0) {
                         onePoint = findOnePointMove(i, Q, c, true);
@@ -108,7 +107,7 @@ public class RecordToRecord implements Solver {
                         r = routeSet.getRoutes()[i.getRoute()];
                         twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), Q, c, true);
                         if (!onePoint && !twoPoint && !twoOpt) {
-                            break loopI;
+                            break;
                         }
                         // Update record when necessary
                         if (routeSet.getRouteLength() < record) {
@@ -168,9 +167,8 @@ public class RecordToRecord implements Solver {
     /**
      * Perturb the solution
      *
-     * @param Q          vehicle capacity
-     * @param c          distance matrix
-     * @return new length of the tour
+     * @param Q vehicle capacity
+     * @param c distance matrix
      */
     private void perturb(int Q, double[][] c) {
         ArrayList<Customer> perturbC = new ArrayList<Customer>();
@@ -240,6 +238,7 @@ public class RecordToRecord implements Solver {
             }
         }
         // Perform cheapest insertion
+        assert bestEdge != null;
         r = routeSet.getRoutes()[bestEdge.getRoute()];
         r.removeEdge(bestEdge);
         r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
@@ -327,10 +326,10 @@ public class RecordToRecord implements Solver {
     /**
      * Find a two point move
      *
-     * @param i         first customer to move
-     * @param Q         vehicle capacity
-     * @param c         distance matrix
-     * @param rtr       true if record to record must be applied, false for only downhill moves
+     * @param i   first customer to move
+     * @param Q   vehicle capacity
+     * @param c   distance matrix
+     * @param rtr true if record to record must be applied, false for only downhill moves
      * @return true if a move is made, false otherwise
      */
     private boolean findTwoPointMove(Customer i, int Q, double[][] c, boolean rtr) {

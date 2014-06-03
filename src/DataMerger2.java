@@ -21,7 +21,7 @@ public class DataMerger2 {
         mergedData = new String[nrOfInstances + 2][5 + solverNames.length];
         runTimeData = new double[2][solverNames.length];
 
-        // Get
+        // Get info
         int nrArray = 0;
         for (int i = 1; i <= 15; i++) {
             readInstanceSingle("" + i, nrArray);

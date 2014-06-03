@@ -6,11 +6,16 @@ import java.io.FileWriter;
 
 /**
  * Created by Joeri on 11-4-2014.
- *
+ * <p/>
  * Main file for the DAVRP problem solver
  */
 class DAVRP {
 
+    /**
+     * Run main program
+     *
+     * @param args input arguments
+     */
     public static void main(String[] args) {
 
 
@@ -100,6 +105,12 @@ class DAVRP {
 
     }
 
+    /**
+     * Write a solution to a data file
+     *
+     * @param instance name of the instance (number with prefix)
+     * @param solution solution to the problem
+     */
     private static void writeToFile(String instance, Solution solution) {
         // Write y
         try {
