@@ -146,7 +146,7 @@ public class RecordToRecord implements Solver {
             }
             // Check if this solution is better than best solution
             if (routeSet.getRouteLength() < bestRouteSet.getRouteLength()) {
-                bestRouteSet = routeSet;
+                bestRouteSet = routeSet.getCopy();
             }
         }
         Long end = System.currentTimeMillis();
