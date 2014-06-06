@@ -13,6 +13,10 @@ public class Route {
     private Customer[] customers;
     private ArrayList<Edge> edges;
     private int routeNumber;
+    private int assignedCustomersInRoute;
+
+    private ArrayList<Customer> assignedCustomers;
+
 
     /**
      * Create an empty route
@@ -40,14 +44,82 @@ public class Route {
      * @param edges       arraylist of edges in this route
      * @param routeNumber number of this route
      */
-    private Route(double costs, int weight, Edge[] inEdges, Edge[] outEdges, Customer[] customers, ArrayList<Edge> edges, int routeNumber) {
+    private Route(double costs, int weight, Edge[] inEdges, Edge[] outEdges, Customer[] customers, ArrayList<Edge> edges, ArrayList<Customer> assignedCustomers, int routeNumber, int assignedCustomersInRoute) {
         this.costs = costs;
         this.weight = weight;
         this.inEdges = inEdges;
         this.outEdges = outEdges;
         this.customers = customers;
         this.edges = edges;
+        this.assignedCustomers = assignedCustomers;
         this.routeNumber = routeNumber;
+        this.assignedCustomersInRoute = assignedCustomersInRoute;
+    }
+
+    /**
+     * Function to recalculate new weight (needed after resetting demands for new scenario)
+     */
+    public void recalculateWeight() {
+        int newWeight = 0;
+        for (Customer c : customers) {
+            if (c != null) {
+                newWeight += c.getDemand();
+            }
+        }
+        weight = newWeight;
+    }
+
+    public void assignCurrentCustomers() {
+        assignedCustomersInRoute = 0;
+        assignedCustomers = new ArrayList<Customer>();
+        for (Customer c : customers) {
+            if (c != null && c.getId() != 0) {
+                c.setAssignedRoute(routeNumber);
+                assignedCustomers.add(c);
+                assignedCustomersInRoute++;
+            }
+        }
+    }
+
+    public boolean removeCustomerFeasible(Customer remove, double alpha) {
+        int nrOfAssignedCustomers = assignedCustomersInRoute;
+        if (remove.getAssignedRoute() == routeNumber) {
+            nrOfAssignedCustomers--;
+        }
+        return nrOfAssignedCustomers >= alpha * assignedCustomers.size();
+    }
+
+    public boolean addCustomerFeasible(Customer add, int Q) {
+        return weight + add.getDemand() <= Q;
+    }
+
+    public boolean swapCustomersFeasible(Customer remove, Customer add, double alpha, int Q) {
+        int nrOfAssignedCustomers = assignedCustomersInRoute;
+        if (remove.getAssignedRoute() == routeNumber) {
+            nrOfAssignedCustomers--;
+        }
+        if (add.getAssignedRoute() == routeNumber) {
+            nrOfAssignedCustomers++;
+        }
+        return (nrOfAssignedCustomers >= alpha * assignedCustomers.size()) && (weight - remove.getDemand() + add.getDemand() <= Q);
+    }
+
+    public boolean swapCustomersFeasible(ArrayList<Customer> removeList, ArrayList<Customer> addList, double alpha, int Q) {
+        int nrOfAssignedCustomers = assignedCustomersInRoute;
+        int newWeight = weight;
+        for (Customer remove : removeList) {
+            if (remove.getAssignedRoute() == routeNumber) {
+                nrOfAssignedCustomers--;
+            }
+            newWeight -= remove.getDemand();
+        }
+        for (Customer add : addList) {
+            if (add.getAssignedRoute() == routeNumber) {
+                nrOfAssignedCustomers++;
+            }
+            newWeight += add.getDemand();
+        }
+        return (nrOfAssignedCustomers >= alpha * assignedCustomers.size()) && (newWeight <= Q);
     }
 
     /**
@@ -76,20 +148,17 @@ public class Route {
             newEdge = new Edge(from, to, e.getDistance());
             newEdge.setRoute(routeNumber);
             edgesCopy.add(newEdge);
-            inEdges[to.getId()] = newEdge;
-            outEdges[from.getId()] = newEdge;
+            inEdgesCopy[to.getId()] = newEdge;
+            outEdgesCopy[from.getId()] = newEdge;
         }
-//        for (int i = 0; i < n; i++) {
-//            if (inEdges[i] != null) {
-//                inEdgesCopy[i] = inEdges[i].getCopy();
-//                edgesCopy.add(inEdgesCopy[i]);
-//            }
-//            if (outEdges[i] != null) {
-//                outEdgesCopy[i] = outEdges[i].getCopy();
-//                edgesCopy.add(outEdgesCopy[i]);
-//            }
-//        }
-        return new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, routeNumber);
+        ArrayList<Customer> assignedCustomersCopy = null;
+        if (assignedCustomers != null) {
+            assignedCustomersCopy = new ArrayList<Customer>(assignedCustomers.size());
+            for (Customer c : assignedCustomers) {
+                assignedCustomersCopy.add(customersCopy[c.getId()]);
+            }
+        }
+        return new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, assignedCustomersCopy, routeNumber, assignedCustomersInRoute);
     }
 
     /**
@@ -127,11 +196,17 @@ public class Route {
             customers[e.getTo().getId()] = e.getTo();
             weight += e.getTo().getDemand();
             e.getTo().setRoute(routeNumber);
+            if (e.getTo().getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute++;
+            }
         }
         if (customers[e.getFrom().getId()] == null) {
             customers[e.getFrom().getId()] = e.getFrom();
             weight += e.getFrom().getDemand();
             e.getFrom().setRoute(routeNumber);
+            if (e.getFrom().getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute++;
+            }
         }
 
         // Add costs
@@ -158,10 +233,16 @@ public class Route {
         if (inEdges[e.getTo().getId()] == null && outEdges[e.getTo().getId()] == null) {
             customers[e.getTo().getId()] = null;
             weight -= e.getTo().getDemand();
+            if (e.getTo().getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
         if (inEdges[e.getFrom().getId()] == null && outEdges[e.getFrom().getId()] == null) {
             customers[e.getFrom().getId()] = null;
             weight -= e.getFrom().getDemand();
+            if (e.getFrom().getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
 
         // Remove costs of edge
@@ -193,10 +274,16 @@ public class Route {
         if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
             customers[j.getId()] = null;
             weight -= j.getDemand();
+            if (j.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
         if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
             customers[i.getId()] = null;
             weight -= i.getDemand();
+            if (i.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
 
     }
@@ -229,10 +316,16 @@ public class Route {
         if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
             customers[j.getId()] = null;
             weight -= j.getDemand();
+            if (j.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
         if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
             customers[i.getId()] = null;
             weight -= i.getDemand();
+            if (i.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
 
     }
@@ -264,10 +357,16 @@ public class Route {
         if (inEdges[j.getId()] == null && outEdges[j.getId()] == null) {
             customers[j.getId()] = null;
             weight -= j.getDemand();
+            if (j.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
         if (inEdges[i.getId()] == null && outEdges[i.getId()] == null) {
             customers[i.getId()] = null;
             weight -= i.getDemand();
+            if (i.getAssignedRoute() == routeNumber) {
+                assignedCustomersInRoute--;
+            }
         }
 
     }
@@ -364,9 +463,6 @@ public class Route {
      * @return edge to the given customer
      */
     public Edge getEdgeFrom(Customer i) {
-        if (outEdges[i.getId()] == null) {
-            System.out.println("Edge does not exist");
-        }
         return outEdges[i.getId()];
     }
 
@@ -377,9 +473,6 @@ public class Route {
      * @return edge from the given customer
      */
     public Edge getEdgeTo(Customer j) {
-        if (inEdges[j.getId()] == null) {
-            System.out.println("Edge does not exist");
-        }
         return inEdges[j.getId()];
     }
 

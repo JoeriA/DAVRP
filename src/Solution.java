@@ -10,12 +10,31 @@ public class Solution {
     private double objectiveValue, runTime, gap;
     private String name;
     private RouteSet[] routes;
+    private int[] assignments;
 
     /**
      * Create an empty solution
      */
     public Solution() {
 
+    }
+
+    /**
+     * Get assignments
+     *
+     * @return array with assignments
+     */
+    public int[] getAssignments() {
+        return assignments;
+    }
+
+    /**
+     * Set array with assignments
+     *
+     * @param assignments array with assignments
+     */
+    public void setAssignments(int[] assignments) {
+        this.assignments = assignments;
     }
 
     /**

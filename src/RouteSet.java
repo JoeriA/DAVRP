@@ -94,7 +94,26 @@ public class RouteSet {
             }
         }
         copy.setRoutes(routesCopy);
-
         return copy;
+    }
+
+    /**
+     * Get a list of routes each customer is assigned to
+     *
+     * @return array of routes each customer is assigned to
+     */
+    public int[] assignments() {
+        // Assign routes to the customers
+        for (Route route : routes) {
+            if (route != null) {
+                route.assignCurrentCustomers();
+            }
+        }
+        // Create array with assignments
+        int[] assignments = new int[customers.length];
+        for (int i = 1; i < customers.length; i++) {
+            assignments[i] = customers[i].getRoute();
+        }
+        return assignments;
     }
 }

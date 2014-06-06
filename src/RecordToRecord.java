@@ -151,6 +151,7 @@ public class RecordToRecord implements Solver {
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
         solution.setObjectiveValue(bestRouteSet.getRouteLength());
+        solution.setAssignments(bestRouteSet.assignments());
         RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
         if (scenario == 0) {
             for (int i = 0; i < sol.length; i++) {
@@ -160,6 +161,12 @@ public class RecordToRecord implements Solver {
             sol[scenario - 1] = bestRouteSet;
         }
         solution.setRoutes(sol);
+
+        SolutionChecker checker = new SolutionChecker();
+        if (!checker.checkRoutes(solution, dataSet)) {
+            System.out.println("Solution is not feasible");
+            throw new IllegalStateException("Solution is not feasible");
+        }
 
         return solution;
     }
@@ -574,6 +581,10 @@ public class RecordToRecord implements Solver {
         }
         rE.addEdge(new Edge(e.getFrom(), f.getTo(), c));
         rF.addEdge(new Edge(f.getFrom(), e.getTo(), c));
+
+        if (f.getFrom() == e.getTo()) {
+            routeSet.getRoutes()[f.getRoute()] = null;
+        }
 
         return true;
     }

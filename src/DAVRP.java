@@ -25,11 +25,11 @@ class DAVRP {
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
-        Solver solver = new RecordToRecord();
+//        Solver solver = new RecordToRecord();
 //        Solver solver = new RecordToRecordLowerBound();
-//        Solver solver = new RecordToRecordDAVRP();
+        Solver solver = new RecordToRecordDAVRP();
 
-        int start = 65;
+        int start = 60;
         int end = 65;
 
         boolean silent = true;

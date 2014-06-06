@@ -10,6 +10,7 @@ public class Customer {
     private int[] demandPerScenario;
     private int demand;
     private int route;
+    private int assignedRoute;
     private double r;
 
     /**
@@ -30,15 +31,17 @@ public class Customer {
      * @param demandPerScenario array of demand per scenario
      * @param demand            demand of this customer in a particular scenario
      * @param route             the number of the route this customer is in
+     * @param assignedRoute     the number of the route this customer is assigned to
      * @param r                 parameter for record to record algorithm
      */
-    private Customer(int id, double xCoordinate, double yCoordinate, int[] demandPerScenario, int demand, int route, double r) {
+    private Customer(int id, double xCoordinate, double yCoordinate, int[] demandPerScenario, int demand, int route, int assignedRoute, double r) {
         this.id = id;
         this.xCoordinate = xCoordinate;
         this.yCoordinate = yCoordinate;
         this.demandPerScenario = demandPerScenario;
         this.demand = demand;
         this.route = route;
+        this.assignedRoute = assignedRoute;
         this.r = r;
     }
 
@@ -50,7 +53,25 @@ public class Customer {
     public Customer getCopy() {
         int[] demandPerScenarioCopy = new int[demandPerScenario.length];
         System.arraycopy(demandPerScenario, 0, demandPerScenarioCopy, 0, demandPerScenario.length);
-        return new Customer(id, xCoordinate, yCoordinate, demandPerScenarioCopy, demand, route, r);
+        return new Customer(id, xCoordinate, yCoordinate, demandPerScenarioCopy, demand, route, assignedRoute, r);
+    }
+
+    /**
+     * Get route/driver this customer is assigned to
+     *
+     * @return route/driver this customer is assigned to
+     */
+    public int getAssignedRoute() {
+        return assignedRoute;
+    }
+
+    /**
+     * Set route/driver this customer is assigned to
+     *
+     * @param assignedRoute route/driver this customer is assigned to
+     */
+    public void setAssignedRoute(int assignedRoute) {
+        this.assignedRoute = assignedRoute;
     }
 
     /**
