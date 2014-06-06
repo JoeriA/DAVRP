@@ -8,6 +8,13 @@ public class SolutionChecker {
 
     }
 
+    /**
+     * Check whether a solution is feasible
+     *
+     * @param solution the solution to check
+     * @param dataSet  the problem to check
+     * @return true if solution is feasible for given problem, false otherwise
+     */
     public boolean checkRoutes(Solution solution, DataSet dataSet) {
 
         double epsilon = 0.005;

@@ -69,6 +69,9 @@ public class Route {
         weight = newWeight;
     }
 
+    /**
+     * Method to assign all current customers to this route
+     */
     public void assignCurrentCustomers() {
         assignedCustomersInRoute = 0;
         assignedCustomers = new ArrayList<Customer>();
@@ -81,6 +84,13 @@ public class Route {
         }
     }
 
+    /**
+     * Check whether removing a certain customer is feasible
+     *
+     * @param remove the customer to remove
+     * @param alpha  percentage of assigned customers that should be visited
+     * @return true if removal is feasible
+     */
     public boolean removeCustomerFeasible(Customer remove, double alpha) {
         int nrOfAssignedCustomers = assignedCustomersInRoute;
         if (remove.getAssignedRoute() == routeNumber) {
@@ -89,10 +99,26 @@ public class Route {
         return nrOfAssignedCustomers >= alpha * assignedCustomers.size();
     }
 
+    /**
+     * Check whether adding a certain customer is feasible
+     *
+     * @param add customer to add
+     * @param Q   vehicle capacity
+     * @return true if adding this customer is feasible
+     */
     public boolean addCustomerFeasible(Customer add, int Q) {
         return weight + add.getDemand() <= Q;
     }
 
+    /**
+     * Check whether swapping two customers is feasible
+     *
+     * @param remove the customer to remove
+     * @param add    customer to add
+     * @param alpha  percentage of assigned customers that should be visited
+     * @param Q      vehicle capacity
+     * @return true if swapping is feasible
+     */
     public boolean swapCustomersFeasible(Customer remove, Customer add, double alpha, int Q) {
         int nrOfAssignedCustomers = assignedCustomersInRoute;
         if (remove.getAssignedRoute() == routeNumber) {
@@ -104,6 +130,15 @@ public class Route {
         return (nrOfAssignedCustomers >= alpha * assignedCustomers.size()) && (weight - remove.getDemand() + add.getDemand() <= Q);
     }
 
+    /**
+     * Check whether swapping a list of customers with another list of customer is feasible
+     *
+     * @param removeList list of customers to remove
+     * @param addList    list of customers to add
+     * @param alpha      percentage of assigned customers that should be visited
+     * @param Q          vehicle capacity
+     * @return true if swap is feasible
+     */
     public boolean swapCustomersFeasible(ArrayList<Customer> removeList, ArrayList<Customer> addList, double alpha, int Q) {
         int nrOfAssignedCustomers = assignedCustomersInRoute;
         int newWeight = weight;
@@ -151,6 +186,7 @@ public class Route {
             inEdgesCopy[to.getId()] = newEdge;
             outEdgesCopy[from.getId()] = newEdge;
         }
+        // Copy assignments
         ArrayList<Customer> assignedCustomersCopy = null;
         if (assignedCustomers != null) {
             assignedCustomersCopy = new ArrayList<Customer>(assignedCustomers.size());
