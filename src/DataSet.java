@@ -16,11 +16,30 @@ public class DataSet {
     private int numberOfVehicles;
     private String instance;
 
+    private int maxDuration;
+    private int dropTime;
+
     /**
      * Create empty dataset
      */
     public DataSet() {
 
+    }
+
+    public int getDropTime() {
+        return dropTime;
+    }
+
+    public void setDropTime(int dropTime) {
+        this.dropTime = dropTime;
+    }
+
+    public int getMaxDuration() {
+        return maxDuration;
+    }
+
+    public void setMaxDuration(int maxDuration) {
+        this.maxDuration = maxDuration;
     }
 
     /**

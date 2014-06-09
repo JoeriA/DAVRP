@@ -25,12 +25,14 @@ class DAVRP {
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
-//        Solver solver = new RecordToRecord();
+        Solver solver = new RecordToRecord();
 //        Solver solver = new RecordToRecordLowerBound();
-        Solver solver = new RecordToRecordDAVRP();
+//        Solver solver = new RecordToRecordDAVRP();
 
-        int start = 60;
-        int end = 65;
+        int start = 1;
+        int end = 0;
+        boolean testCMT = false;
+        boolean testGolden = true;
 
         boolean silent = true;
 
@@ -103,6 +105,61 @@ class DAVRP {
             }
         }
 
+        if (testCMT) {
+            DataReaderCMT dataReaderCMT = new DataReaderCMT();
+            for (int i = 1; i <= 14; i++) {
+                String instance = "vrpnc" + i;
+                try {
+                    System.out.println("Solving " + instance);
+                    Frame frame = new Frame();
+                    dataSet = dataReaderCMT.readFile(instance);
+                    if (!silent) {
+                        frame.createMap(dataSet);
+                    }
+                    Solution solution = solver.solve(dataSet);
+                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                    if (!silent) {
+                        frame.drawResults(solution);
+                    }
+                    writeToFile(instance, solution);
+                } catch (GRBException e) {
+                    e.printStackTrace();
+                } catch (IloException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        if (testGolden) {
+            DataReaderGolden dataReaderGolden = new DataReaderGolden();
+            for (int i = 1; i <= 20; i++) {
+                String instance;
+                if (i < 10) {
+                    instance = "kelly0" + i;
+                } else {
+                    instance = "kelly" + i;
+                }
+                try {
+                    System.out.println("Solving " + instance);
+                    Frame frame = new Frame();
+                    dataSet = dataReaderGolden.readFile(instance);
+                    if (!silent) {
+                        frame.createMap(dataSet);
+                    }
+                    Solution solution = solver.solve(dataSet);
+                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                    if (!silent) {
+                        frame.drawResults(solution);
+                    }
+                    writeToFile(instance, solution);
+                } catch (GRBException e) {
+                    e.printStackTrace();
+                } catch (IloException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     /**
@@ -115,8 +172,8 @@ class DAVRP {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
-//            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+//            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
