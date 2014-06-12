@@ -191,7 +191,7 @@ public class Route {
         if (assignedCustomers != null) {
             assignedCustomersCopy = new ArrayList<Customer>(assignedCustomers.size());
             for (Customer c : assignedCustomers) {
-                assignedCustomersCopy.add(customersCopy[c.getId()]);
+                assignedCustomersCopy.add(newCustomers[c.getId()]);
             }
         }
         return new Route(costs, weight, inEdgesCopy, outEdgesCopy, customersCopy, edgesCopy, assignedCustomersCopy, routeNumber, assignedCustomersInRoute);

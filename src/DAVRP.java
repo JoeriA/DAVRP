@@ -25,14 +25,16 @@ class DAVRP {
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
-        Solver solver = new RecordToRecord();
 //        Solver solver = new RecordToRecordLowerBound();
 //        Solver solver = new RecordToRecordDAVRP();
+//        Solver solver = new RecordToRecordDAVRPImproved();
+//        Solver solver = new RecordToRecordH();
+        Solver solver = new RecordToRecordDAVRPH();
 
         int start = 1;
-        int end = 0;
+        int end = 125;
         boolean testCMT = false;
-        boolean testGolden = true;
+        boolean testGolden = false;
 
         boolean silent = true;
 
@@ -111,16 +113,13 @@ class DAVRP {
                 String instance = "vrpnc" + i;
                 try {
                     System.out.println("Solving " + instance);
-                    Frame frame = new Frame();
                     dataSet = dataReaderCMT.readFile(instance);
-                    if (!silent) {
-                        frame.createMap(dataSet);
+                    if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
+                        System.out.println("Problem contains not implemented restrictions");
+                        continue;
                     }
                     Solution solution = solver.solve(dataSet);
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
-                    if (!silent) {
-                        frame.drawResults(solution);
-                    }
                     writeToFile(instance, solution);
                 } catch (GRBException e) {
                     e.printStackTrace();
@@ -141,16 +140,13 @@ class DAVRP {
                 }
                 try {
                     System.out.println("Solving " + instance);
-                    Frame frame = new Frame();
                     dataSet = dataReaderGolden.readFile(instance);
-                    if (!silent) {
-                        frame.createMap(dataSet);
+                    if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
+                        System.out.println("Problem contains not implemented restrictions");
+                        continue;
                     }
                     Solution solution = solver.solve(dataSet);
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
-                    if (!silent) {
-                        frame.drawResults(solution);
-                    }
                     writeToFile(instance, solution);
                 } catch (GRBException e) {
                     e.printStackTrace();
@@ -172,8 +168,8 @@ class DAVRP {
         // Write y
         try {
             // Create file
-//            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
-            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
+//            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";

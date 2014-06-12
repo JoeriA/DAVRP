@@ -37,17 +37,17 @@ public class DataMerger2 {
         }
         for (int i = 66; i <= 95; i++) {
             for (int j = 1; j <= 3; j++) {
-                readInstanceSingle2(i + "_" + j, nrArray);
+                readInstanceSingleH2(i + "_" + j, nrArray);
                 nrArray++;
             }
         }
         for (int i = 96; i <= 105; i++) {
-            readInstanceSingle2(i + "_1", nrArray);
+            readInstanceSingleH2(i + "_1", nrArray);
             nrArray++;
         }
         for (int i = 106; i <= 125; i++) {
             for (int j = 1; j <= 3; j++) {
-                readInstanceSingle2(i + "_" + j, nrArray);
+                readInstanceSingleH3(i + "_" + j, nrArray);
                 nrArray++;
             }
         }
@@ -69,6 +69,8 @@ public class DataMerger2 {
         mergedData[instance][0] = fileName;
         readInfo(fileName, instance);
         readFileRemy1("DAVRPInCPLEXStatistics_" + fileName, instance, 5);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H1", instance, 6);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 7);
         for (int i = 3; i < solverNames.length; i++) {
             readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
@@ -80,11 +82,28 @@ public class DataMerger2 {
      * @param fileName filename of the file (file location with prefix of file name)
      * @param instance number of the instance
      */
-    private static void readInstanceSingle2(String fileName, int instance) {
+    private static void readInstanceSingleH2(String fileName, int instance) {
         // Write info
         mergedData[instance][0] = fileName;
         readInfo(fileName, instance);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 7);
+        for (int i = 3; i < solverNames.length; i++) {
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
+        }
+    }
+
+    /**
+     * Read an output files for one instance
+     *
+     * @param fileName filename of the file (file location with prefix of file name)
+     * @param instance number of the instance
+     */
+    private static void readInstanceSingleH3(String fileName, int instance) {
+        // Write info
+        mergedData[instance][0] = fileName;
+        readInfo(fileName, instance);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 6);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 7);
         for (int i = 3; i < solverNames.length; i++) {
             readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }
@@ -101,6 +120,7 @@ public class DataMerger2 {
         mergedData[instance][0] = fileName;
         readInfo(fileName, instance);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_1_2", instance, 6);
+        readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 7);
         for (int i = 3; i < solverNames.length; i++) {
             readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 5));
         }

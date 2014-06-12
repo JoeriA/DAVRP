@@ -1,8 +1,10 @@
+import java.util.ArrayList;
+
 /**
  * Created by Joeri on 16-4-2014.
  * Class for a customer
  */
-public class Customer {
+public class Customer implements Comparable<Customer> {
 
     private final int id;
     private double xCoordinate;
@@ -12,6 +14,7 @@ public class Customer {
     private int route;
     private int assignedRoute;
     private double r;
+    private ArrayList<Neighbor> neighbors;
 
     /**
      * Create a customer
@@ -34,7 +37,7 @@ public class Customer {
      * @param assignedRoute     the number of the route this customer is assigned to
      * @param r                 parameter for record to record algorithm
      */
-    private Customer(int id, double xCoordinate, double yCoordinate, int[] demandPerScenario, int demand, int route, int assignedRoute, double r) {
+    private Customer(int id, double xCoordinate, double yCoordinate, int[] demandPerScenario, int demand, int route, int assignedRoute, double r, ArrayList<Neighbor> neighbors) {
         this.id = id;
         this.xCoordinate = xCoordinate;
         this.yCoordinate = yCoordinate;
@@ -43,6 +46,7 @@ public class Customer {
         this.route = route;
         this.assignedRoute = assignedRoute;
         this.r = r;
+        this.neighbors = neighbors;
     }
 
     /**
@@ -51,9 +55,15 @@ public class Customer {
      * @return a copy of this customer (hard copy without references)
      */
     public Customer getCopy() {
-        int[] demandPerScenarioCopy = new int[demandPerScenario.length];
-        System.arraycopy(demandPerScenario, 0, demandPerScenarioCopy, 0, demandPerScenario.length);
-        return new Customer(id, xCoordinate, yCoordinate, demandPerScenarioCopy, demand, route, assignedRoute, r);
+        return new Customer(id, xCoordinate, yCoordinate, demandPerScenario, demand, route, assignedRoute, r, neighbors);
+    }
+
+    public ArrayList<Neighbor> getNeighbors() {
+        return neighbors;
+    }
+
+    public void setNeighbors(ArrayList<Neighbor> neighbors) {
+        this.neighbors = neighbors;
     }
 
     /**
