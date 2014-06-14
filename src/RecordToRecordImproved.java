@@ -48,7 +48,7 @@ public class RecordToRecordImproved implements Solver {
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record");
+        solution.setName("RTR_i");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;

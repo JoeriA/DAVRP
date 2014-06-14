@@ -32,6 +32,18 @@ public class RecordToRecordH implements Solver {
     }
 
     /**
+     * Implementation of record-to-record heuristic for the DAVRP
+     */
+    public RecordToRecordH(int K, int I, int M, int NBListSize, double beta) {
+        // Parameters
+        this.K = K;
+        this.I = I;
+        this.M = M;
+        this.NBListSize = NBListSize;
+        this.beta = beta;
+    }
+
+    /**
      * Solve VRP for this data set
      *
      * @param dataSet data set to be solved
@@ -51,7 +63,7 @@ public class RecordToRecordH implements Solver {
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record");
+        solution.setName("Record2Record_asc");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
@@ -82,6 +94,8 @@ public class RecordToRecordH implements Solver {
                 while (neighborList.get(0).getDistance() > criticalValue) {
                     neighborList.remove(0);
                 }
+//                Collections.sort(neighborList, Neighbor.neighborAscending);
+                Collections.sort(neighborList, Neighbor.distanceAscending);
                 customer.setNeighbors(neighborList);
             }
         }
@@ -112,6 +126,7 @@ public class RecordToRecordH implements Solver {
             RouteSet globalSolution = routeSet.getCopy();
 
             for (int m = 0; m < M; m++) {
+                double initial = routeSet.getRouteLength();
                 optimizationLoop();
                 if (routeSet.getRouteLength() < globalRecord) {
                     globalRecord = routeSet.getRouteLength();
@@ -142,6 +157,9 @@ public class RecordToRecordH implements Solver {
                 // Check if this solution is better than best solution
                 if (globalSolution.getRouteLength() < bestRouteSet.getRouteLength()) {
                     bestRouteSet = globalSolution.getCopy();
+                }
+                if (routeSet.getRouteLength() >= initial) {
+                    break;
                 }
             }
         }

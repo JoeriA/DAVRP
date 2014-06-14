@@ -33,7 +33,7 @@ public class RecordToRecordDAVRPImproved implements Solver {
     public Solution solve(DataSet dataSet) {
 
         Solution solution = new Solution();
-        solution.setName("RTR_DAVRP");
+        solution.setName("RTR_DAVRP_i");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;

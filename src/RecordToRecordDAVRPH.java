@@ -9,8 +9,8 @@ public class RecordToRecordDAVRPH implements Solver {
 
     private double record;
     private double deviation;
-    private double K;
-    private double I;
+    private int K;
+    private int I;
     private int M;
     private int NBListSize;
     private double[][] c;
@@ -39,7 +39,7 @@ public class RecordToRecordDAVRPH implements Solver {
     public Solution solve(DataSet dataSet) {
 
         Solution solution = new Solution();
-        solution.setName("RTR_DAVRP");
+        solution.setName("RTR_DAVRP_H");
 
         // Get some data from data set
         int o = dataSet.getNumberOfScenarios();
@@ -53,7 +53,7 @@ public class RecordToRecordDAVRPH implements Solver {
         RouteSet[] solutions = new RouteSet[o];
 
         // Create a basis solution to start with
-        RecordToRecordH rtr = new RecordToRecordH();
+        RecordToRecordH rtr = new RecordToRecordH(K, I, M, NBListSize, beta);
         Solution solutionBasis = rtr.solve(dataSet);
         RouteSet routeSetBasis = solutionBasis.getRoutes()[0];
 
@@ -85,6 +85,8 @@ public class RecordToRecordDAVRPH implements Solver {
                 if (routeSet.getRouteLength() < globalRecord) {
                     globalRecord = routeSet.getRouteLength();
                     globalSolution = routeSet.getCopy();
+                } else {
+                    break;
                 }
             }
             solutions[scenario] = globalSolution.getCopy();

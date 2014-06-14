@@ -24,17 +24,17 @@ class DAVRP {
 //        Solver solver = new SolverCplexLargest();
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
-//        Solver solver = new ClarkeWright();
+        Solver solver = new ClarkeWright();
 //        Solver solver = new RecordToRecordLowerBound();
 //        Solver solver = new RecordToRecordDAVRP();
 //        Solver solver = new RecordToRecordDAVRPImproved();
 //        Solver solver = new RecordToRecordH();
-        Solver solver = new RecordToRecordDAVRPH();
+//        Solver solver = new RecordToRecordDAVRPH();
 
         int start = 1;
-        int end = 125;
-        boolean testCMT = false;
-        boolean testGolden = false;
+        int end = 0;
+        boolean testCMT = true;
+        boolean testGolden = true;
 
         boolean silent = true;
 
