@@ -4,10 +4,10 @@ import java.io.*;
  * Created by Joeri on 15-5-2014.
  * Create class for merging all outputs from different solvers
  */
-public class DataMergerGolden {
+public class DataMergerCMT {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Record2Record", "Record2Record_asc", "Record2Record_desc", "Clarke-Wright heuristic"};
+    private static String[] solverNames = {"Clarke-Wright heuristic"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -19,18 +19,20 @@ public class DataMergerGolden {
      */
     public static void main(String[] args) {
 
-        nrOfInstances = 12;
-        colsBefore = 5;
+        nrOfInstances = 7;
+        colsBefore = 4;
 
-        mergedData = new String[nrOfInstances + 2][colsBefore - 1 + solverNames.length];
+        mergedData = new String[nrOfInstances + 2][colsBefore + solverNames.length];
         runTimeData = new double[2][solverNames.length];
 
         readDataFile();
         // Get info
         int nrArray = 0;
-        readInstanceSingle("09", nrArray);
-        nrArray++;
-        for (int i = 10; i <= 20; i++) {
+        for (int i = 1; i <= 5; i++) {
+            readInstanceSingle("" + i, nrArray);
+            nrArray++;
+        }
+        for (int i = 11; i <= 12; i++) {
             readInstanceSingle("" + i, nrArray);
             nrArray++;
         }
@@ -48,7 +50,7 @@ public class DataMergerGolden {
     private static void readDataFile() {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("DataGolden.txt"));
+            reader = new BufferedReader(new FileReader("DataCMT.txt"));
 
             // Initialize temporary variables
             String s;
@@ -61,12 +63,8 @@ public class DataMergerGolden {
             for (int line = 0; line < nrOfInstances; line++) {
                 s = reader.readLine();
                 split = s.split("\t");
-                System.arraycopy(split, 0, mergedData[line], 0, 3);
-                mergedData[line][3] = split[4];
+                System.arraycopy(split, 0, mergedData[line], 0, 4);
             }
-            s = reader.readLine();
-            split = s.split("\t");
-            mergedData[mergedData.length - 1][3] = split[4];
         } catch (IOException e) {
             System.out.println("Error reading data file");
         } finally {
@@ -89,7 +87,7 @@ public class DataMergerGolden {
     private static void readInstanceSingle(String fileName, int instance) {
         // Write info
         for (int i = 0; i < solverNames.length; i++) {
-            readFile("kelly" + fileName + "_results_" + solverNames[i], instance, (i + colsBefore - 1));
+            readFile("vrpnc" + fileName + "_results_" + solverNames[i], instance, (i + colsBefore));
         }
     }
 
@@ -112,8 +110,8 @@ public class DataMergerGolden {
             // Save runtime
             s = reader.readLine();
             split = s.split("\t");
-            runTimeData[0][solver - colsBefore + 1] += Double.parseDouble(split[split.length - 1]);
-            runTimeData[1][solver - colsBefore + 1] += 1.0;
+            runTimeData[0][solver - colsBefore] += Double.parseDouble(split[split.length - 1]);
+            runTimeData[1][solver - colsBefore] += 1.0;
             // Save value
             s = reader.readLine();
             split = s.split("\t");
@@ -137,7 +135,7 @@ public class DataMergerGolden {
     private static void calculateMeanRuntimes() {
         mergedData[mergedData.length - 1][0] = "Average runtime (s)";
         for (int i = 0; i < solverNames.length; i++) {
-            mergedData[mergedData.length - 1][i + colsBefore - 1] = "" + (runTimeData[0][i] / runTimeData[1][i]);
+            mergedData[mergedData.length - 1][i + colsBefore] = "" + (runTimeData[0][i] / runTimeData[1][i]);
         }
     }
 
@@ -147,16 +145,16 @@ public class DataMergerGolden {
     private static void calculateBestValues() {
         double[] gaps = new double[solverNames.length + 1];
         for (int i = 0; i < mergedData.length - 2; i++) {
-            for (int j = colsBefore - 2; j < mergedData[i].length; j++) {
+            for (int j = colsBefore - 1; j < mergedData[i].length; j++) {
                 if (mergedData[i][j] != null) {
                     double bestValue = Double.parseDouble(mergedData[i][2]);
-                    gaps[j - colsBefore + 2] += (Double.parseDouble(mergedData[i][j]) - bestValue) / bestValue;
+                    gaps[j - colsBefore + 1] += (Double.parseDouble(mergedData[i][j]) - bestValue) / bestValue;
                 }
             }
         }
         mergedData[mergedData.length - 2][0] = "Avg. gap (%)";
         for (int i = 0; i < gaps.length; i++) {
-            mergedData[mergedData.length - 2][i + colsBefore - 2] = "" + gaps[i] / (double) nrOfInstances * 100.0;
+            mergedData[mergedData.length - 2][i + colsBefore - 1] = "" + gaps[i] / (double) nrOfInstances * 100.0;
         }
     }
 
@@ -167,7 +165,7 @@ public class DataMergerGolden {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Merged output Golden.txt");
+            FileWriter fstream = new FileWriter("Merged output CMT.txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
@@ -194,14 +192,15 @@ public class DataMergerGolden {
             // Print average gaps
             line += mergedData[mergedData.length - 2][0];
             line += "\t\t\t";
-            for (int col = colsBefore - 2; col < mergedData[mergedData.length - 2].length; col++) {
+            for (int col = colsBefore - 1; col < mergedData[mergedData.length - 2].length; col++) {
                 line += round(mergedData[mergedData.length - 2][col], 2);
                 line += "\t";
             }
             line += "\r\n";
+            // Print running times
             line += mergedData[mergedData.length - 1][0];
-            line += "\t\t\t";
-            for (int col = colsBefore - 2; col < mergedData[mergedData.length - 1].length; col++) {
+            line += "\t\t\t\t";
+            for (int col = colsBefore; col < mergedData[mergedData.length - 1].length; col++) {
                 line += round(mergedData[mergedData.length - 1][col], 1);
                 line += "\t";
             }
@@ -223,7 +222,7 @@ public class DataMergerGolden {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Merged output Golden.tex");
+            FileWriter fstream = new FileWriter("Merged output CMT.tex");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
@@ -234,7 +233,7 @@ public class DataMergerGolden {
             }
             line += "}\r\n\\hline\r\n";
             // Title
-            line += "Problem & \\# Customers & Best solution & VRTR";
+            line += "Problem & n & Best known & CW";
             for (String s : solverNames) {
                 line += " & " + s;
             }
@@ -254,25 +253,22 @@ public class DataMergerGolden {
                 line += "\\\\\r\n";
             }
             // Print average gaps
-            line += "\\multicolumn{2}{l}{Avg. gap (\\%)} &  & ";
-            for (int col = 3; col < mergedData[mergedData.length - 2].length - 1; col++) {
+            line += "\\multicolumn{3}{l}{Avg. gap (\\%)} & ";
+            for (int col = colsBefore - 1; col < mergedData[mergedData.length - 2].length - 1; col++) {
                 line += round(mergedData[mergedData.length - 2][col], 2);
                 line += " & ";
             }
             line += round(mergedData[mergedData.length - 2][mergedData[mergedData.length - 2].length - 1], 2);
             line += "\\\\\r\n";
-            line += "\\multicolumn{2}{l}{Average runtime (s)} &  & ";
-            for (int col = 3; col < mergedData[mergedData.length - 1].length - 1; col++) {
+            line += "\\multicolumn{3}{l}{Average runtime (s)} &  & ";
+            for (int col = colsBefore; col < mergedData[mergedData.length - 1].length; col++) {
                 line += round(mergedData[mergedData.length - 1][col], 1);
                 line += " & ";
             }
             line += round(mergedData[mergedData.length - 1][mergedData[mergedData.length - 1].length - 1], 1);
             line += "\\\\\r\n\\hline\r\n\\end{tabular}\r\n}\r\n";
-            line += "\\caption{Results record-to-record algorithms on test instances from \\citet{Golden1998}." +
-                    "VRTR is the algorithm of \\citet{Li2005}." +
-                    "RTR is our implementation, where the first one is not sorted," +
-                    "in asc neighbors are sorted on ascending distance and in desc on descending distance.}";
-            line += "\r\n\\label{tab:rtrGolden}\r\n\\end{table}\r\n";
+            line += "\\caption{Results Clarke-Wright algorithm on test instances from \\citet{Christofides1979}.}";
+            line += "\r\n\\label{tab:CMT}\r\n\\end{table}\r\n";
             out.write(line);
 
             // Close the output stream
@@ -288,5 +284,4 @@ public class DataMergerGolden {
         double after = Math.round(factor * before) / factor;
         return ("" + after);
     }
-
 }
