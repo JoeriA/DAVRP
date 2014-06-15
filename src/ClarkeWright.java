@@ -10,6 +10,7 @@ public class ClarkeWright implements Solver {
     private double lambda;
     private Customer[] customers;
     private int n;
+    private int nrOfScenarios;
     private int Q;
     private double[][] c;
 
@@ -39,7 +40,7 @@ public class ClarkeWright implements Solver {
 
         // Get some data from dataset
         n = dataSet.getNumberOfCustomers() + 1;
-        int o = dataSet.getNumberOfScenarios();
+        nrOfScenarios = dataSet.getNumberOfScenarios();
         Q = dataSet.getVehicleCapacity();
         c = dataSet.getTravelCosts();
         customers = dataSet.getCustomers();
@@ -49,7 +50,7 @@ public class ClarkeWright implements Solver {
         for (Customer c : customers) {
             highestDemand = 0;
             // Get highest demand of all scenarios
-            for (int k = 0; k < o; k++) {
+            for (int k = 0; k < nrOfScenarios; k++) {
                 if (c.getDemandPerScenario()[k] > highestDemand) {
                     highestDemand = c.getDemandPerScenario()[k];
                 }
@@ -57,7 +58,7 @@ public class ClarkeWright implements Solver {
             c.setDemand(highestDemand);
         }
 
-        return solve(o);
+        return solve();
     }
 
     /**
@@ -75,12 +76,12 @@ public class ClarkeWright implements Solver {
         c = dataSet.getTravelCosts();
         customers = dataSet.getCustomers();
 
-        // Get largest demands
+        // Get demands
         for (Customer c : customers) {
             c.setDemand(c.getDemandPerScenario()[scenario - 1]);
         }
 
-        return solve(dataSet.getNumberOfScenarios());
+        return solve();
     }
 
     /**
@@ -88,7 +89,7 @@ public class ClarkeWright implements Solver {
      *
      * @return solution to the VRP
      */
-    private Solution solve(int nrOfScenarios) {
+    private Solution solve() {
 
         Solution solution = new Solution();
         solution.setName("Clarke-Wright heuristic");
@@ -109,25 +110,20 @@ public class ClarkeWright implements Solver {
         // Calculate all possible savings
         ArrayList<Saving> savingsList = computeSavings(customers, c);
 
-        Saving saving;
-        Customer customerI, customerJ;
-        int intRouteI, intRouteJ;
-        Route routeI, routeJ;
-
         // Do all savings that are meaningful
-        while (!savingsList.isEmpty()) {
+        while (!savingsList.isEmpty() && savingsList.get(0).getSaving() > 0.0) {
 
             // Get first saving in the list (the best saving)
-            saving = savingsList.get(0);
-            customerI = saving.getI();
-            customerJ = saving.getJ();
-            intRouteI = customerI.getRoute();
-            intRouteJ = customerJ.getRoute();
-            routeI = routes[intRouteI];
-            routeJ = routes[intRouteJ];
+            Saving saving = savingsList.get(0);
+            Customer customerI = saving.getI();
+            Customer customerJ = saving.getJ();
+            int intRouteI = customerI.getRoute();
+            int intRouteJ = customerJ.getRoute();
+            Route routeI = routes[intRouteI];
+            Route routeJ = routes[intRouteJ];
 
-            // Only use saving if it is useful, if customers are in different routes and new route is feasible
-            if (saving.getSaving() > 0 && intRouteI != intRouteJ && routeI.getWeight() + routeJ.getWeight() <= Q) {
+            // Only use saving if customers are in different routes and new route is feasible
+            if (intRouteI != intRouteJ && routeI.getWeight() + routeJ.getWeight() <= Q) {
                 boolean success = routeI.merge(routeJ, saving, c);
                 // If merge is successful, delete other route
                 if (success) {
@@ -142,7 +138,7 @@ public class ClarkeWright implements Solver {
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
         // Calculate costs
-        double costs = 0;
+        double costs = 0.0;
         for (Route route : routes) {
             if (route != null) {
                 costs += route.getCosts();

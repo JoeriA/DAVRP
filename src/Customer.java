@@ -225,4 +225,31 @@ public class Customer implements Comparable<Customer> {
             return 1;
         }
     }
+
+    /**
+     * Override equals. Checks whether a given customer is the same
+     *
+     * @param other other customer to check
+     * @return true when customer is the same, false otherwise
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof Customer) {
+            Customer c = (Customer) other;
+            if (id == c.getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Override hashcode (because of changed equals)
+     *
+     * @return hashcode
+     */
+    @Override
+    public int hashCode() {
+        return id;
+    }
 }

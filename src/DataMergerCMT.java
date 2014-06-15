@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerCMT {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Clarke-Wright heuristic"};
+    private static String[] solverNames = {"Clarke-Wright heuristic", "Record2Record"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -237,7 +237,7 @@ public class DataMergerCMT {
             for (String s : solverNames) {
                 line += " & " + s;
             }
-            line += "\\\\\r\n\\hline";
+            line += "\\\\\r\n\\hline\r\n";
 
             // Print results solvers
             for (int lineNr = 0; lineNr < nrOfInstances; lineNr++) {
