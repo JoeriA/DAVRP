@@ -86,11 +86,13 @@ class DataReaderCMT {
             newData.setCustomers(customers);
 
             // Read travel costs
-            double scale = Math.pow(10.0, 7.0);
+            double scale = Math.pow(10.0, 2.0);
             double[][] travelCosts = new double[numberOfCustomers + 1][numberOfCustomers + 1];
             for (int i = 0; i <= numberOfCustomers; i++) {
                 for (int j = i + 1; j <= numberOfCustomers; j++) {
                     double costs = Math.round(scale * customers[i].getDistance(customers[j])) / scale;
+//                    travelCosts[i][j] = costs;
+//                    travelCosts[j][i] = costs;
                     travelCosts[i][j] = customers[i].getDistance(customers[j]);
                     travelCosts[j][i] = travelCosts[i][j];
                 }

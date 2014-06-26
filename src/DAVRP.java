@@ -25,22 +25,22 @@ class DAVRP {
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
+//        Solver solver = new ClarkeWrightSequential();
+//        Solver solver = new ClarkeWright2();
 //        Solver solver = new RecordToRecordLowerBound();
 //        Solver solver = new RecordToRecordDAVRP();
 //        Solver solver = new RecordToRecordDAVRPImproved();
 //        Solver solver = new RecordToRecordH();
-        Solver solver = new RecordToRecordH3();
+//        Solver solver = new RecordToRecordH4();
 //        Solver solver = new RecordToRecordDAVRPH();
+        Solver solver = new RecordToRecordDAVRPH4();
 
         int start = 1;
-        int end = 0;
+        int end = 125;
         boolean testCMT = false;
-        boolean testGolden = true;
+        boolean testGolden = false;
 
         boolean silent = true;
-
-        DataReader dataReader = new DataReader();
-        DataSet dataSet;
 
         for (int i = start; i <= end; i++) {
             if (i <= 65) {
@@ -48,7 +48,8 @@ class DAVRP {
                 try {
                     System.out.println("Solving " + instance);
                     Frame frame = new Frame();
-                    dataSet = dataReader.readFile(instance);
+                    DataReader dataReader = new DataReader();
+                    DataSet dataSet = dataReader.readFile(instance);
                     if (!silent) {
                         frame.createMap(dataSet);
                     }
@@ -69,7 +70,8 @@ class DAVRP {
                     try {
                         System.out.println("Solving " + instance);
                         Frame frame = new Frame();
-                        dataSet = dataReader.readFile(instance);
+                        DataReader dataReader = new DataReader();
+                        DataSet dataSet = dataReader.readFile(instance);
                         if (!silent) {
                             frame.createMap(dataSet);
                         }
@@ -90,7 +92,8 @@ class DAVRP {
                 try {
                     System.out.println("Solving " + instance);
                     Frame frame = new Frame();
-                    dataSet = dataReader.readFile(instance);
+                    DataReader dataReader = new DataReader();
+                    DataSet dataSet = dataReader.readFile(instance);
                     if (!silent) {
                         frame.createMap(dataSet);
                     }
@@ -114,7 +117,8 @@ class DAVRP {
                 String instance = "vrpnc" + i;
                 try {
                     System.out.println("Solving " + instance);
-                    dataSet = dataReaderCMT.readFile(instance);
+                    DataReader dataReader = new DataReader();
+                    DataSet dataSet = dataReaderCMT.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
                         System.out.println("Problem contains not implemented restrictions");
                         continue;
@@ -141,7 +145,8 @@ class DAVRP {
                 }
                 try {
                     System.out.println("Solving " + instance);
-                    dataSet = dataReaderGolden.readFile(instance);
+                    DataReader dataReader = new DataReader();
+                    DataSet dataSet = dataReaderGolden.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
                         System.out.println("Problem contains not implemented restrictions");
                         continue;

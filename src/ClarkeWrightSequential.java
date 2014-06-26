@@ -5,7 +5,7 @@ import java.util.Collections;
  * Created by Joeri on 19-5-2014.
  * Implementation Clarke Wright heuristic
  */
-public class ClarkeWright implements Solver {
+public class ClarkeWrightSequential implements Solver {
 
     private double lambda;
     private Customer[] customers;
@@ -17,7 +17,7 @@ public class ClarkeWright implements Solver {
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
      */
-    public ClarkeWright() {
+    public ClarkeWrightSequential() {
 
         lambda = 1.0;
     }
@@ -92,7 +92,7 @@ public class ClarkeWright implements Solver {
     private Solution solve() {
 
         Solution solution = new Solution();
-        solution.setName("Clarke-Wright heuristic");
+        solution.setName("Clarke-Wright sequential");
 
         Long start = System.currentTimeMillis();
 
@@ -107,32 +107,48 @@ public class ClarkeWright implements Solver {
             routes[i - 1].addEdge(new Edge(customers[i], customers[0], c));
         }
 
-        // Calculate all possible savings
-        ArrayList<Saving> savingsList = computeSavings(customers, c);
+        for (int routeNr = 0; routeNr < n - 1; routeNr++) {
+            if (routes[routeNr] != null) {
 
-        // Do all savings that are meaningful
-        while (!savingsList.isEmpty()) {
+                // Calculate all possible savings
+                ArrayList<Saving> savingsList = computeSavings(customers, c);
 
-            // Get first saving in the list (the best saving)
-            Saving saving = savingsList.get(0);
-            Customer customerI = saving.getI();
-            Customer customerJ = saving.getJ();
-            int intRouteI = customerI.getRoute();
-            int intRouteJ = customerJ.getRoute();
-            Route routeI = routes[intRouteI];
-            Route routeJ = routes[intRouteJ];
+                // Do all savings that are meaningful
+                while (!savingsList.isEmpty() && savingsList.get(0).getSaving() > 0.0) {
 
-            // Only use saving if customers are in different routes and new route is feasible
-            if (intRouteI != intRouteJ && routeI.getWeight() + routeJ.getWeight() <= Q) {
-                boolean success = routeI.merge(routeJ, saving, c);
-                // If merge is successful, delete other route
-                if (success) {
-                    routes[intRouteJ] = null;
+                    // Get first saving in the list (the best saving)
+                    Saving saving = savingsList.get(0);
+                    Customer customerI = saving.getI();
+                    Customer customerJ = saving.getJ();
+                    int intRouteI = customerI.getRoute();
+                    int intRouteJ = customerJ.getRoute();
+                    Route routeI = routes[intRouteI];
+                    Route routeJ = routes[intRouteJ];
+
+                    if (intRouteI == routeNr) {
+                        // Only use saving if customers are in different routes and new route is feasible
+                        if (intRouteI != intRouteJ && routeI.getWeight() + routeJ.getWeight() <= Q) {
+                            boolean success = routeI.merge(routeJ, saving, c);
+                            // If merge is successful, delete other route
+                            if (success) {
+                                routes[intRouteJ] = null;
+                            }
+                        }
+                    } else if (intRouteJ == routeNr) {
+                        // Only use saving if customers are in different routes and new route is feasible
+                        if (intRouteI != intRouteJ && routeI.getWeight() + routeJ.getWeight() <= Q) {
+                            boolean success = routeJ.merge(routeI, saving, c);
+                            // If merge is successful, delete other route
+                            if (success) {
+                                routes[intRouteI] = null;
+                            }
+                        }
+                    }
+
+                    // Remove saving
+                    savingsList.remove(0);
                 }
             }
-
-            // Remove saving
-            savingsList.remove(0);
         }
 
         Long end = System.currentTimeMillis();

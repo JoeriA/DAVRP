@@ -1,4 +1,5 @@
 import java.io.*;
+import java.text.DecimalFormat;
 
 /**
  * Created by Joeri on 15-5-2014.
@@ -7,8 +8,9 @@ import java.io.*;
 public class DataMerger2 {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "CPLEX largest", "Clarke-Wright heuristic", "Record2Record", "RTR_DAVRP_H"};
+    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2","RTR_DAVRP_H4"};
     private static double[][] runTimeData;
+    private static double[][] dataExact, dataH1, dataH2;
 
     /**
      * Merge all outputs from different solvers
@@ -20,6 +22,9 @@ public class DataMerger2 {
         int nrOfInstances = 75 + 50 * 3;
         mergedData = new String[nrOfInstances + 2][5 + solverNames.length];
         runTimeData = new double[2][solverNames.length];
+        dataExact = new double[3][solverNames.length];
+        dataH1 = new double[3][solverNames.length];
+        dataH2 = new double[3][solverNames.length];
 
         // Get info
         int nrArray = 0;
@@ -55,6 +60,7 @@ public class DataMerger2 {
         calculateBestValues();
         calculateMeanRuntimes();
         writeToFile();
+        writeToLatex();
 
     }
 
@@ -348,6 +354,76 @@ public class DataMerger2 {
         } catch (Exception e) {// Catch exception if any
             System.err.println("Error in writing file: " + e.getMessage());
         }
+    }
+
+    /**
+     * Create one master table with all results
+     */
+    private static void writeToLatex() {
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/resultsDAVRP_unedited.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{ThreePartTable}\r\n\\begin{TableNotes}";
+            for (int j = 0; j < solverNames.length; j++) {
+                line += "\r\n\\item ["+ (j+1) +"] " + solverNames[j] + ".";
+            }
+            line += "\r\n\\end{TableNotes}\r\n\\begin{longtable}{rrrrr";
+            for (String ignored : solverNames) {
+                line += "r";
+            }
+            line += "}\r\n\\hline\r\n";
+            // Title
+            line += "Instance & n & |$\\Omega$| & $\\alpha$ & Best known";
+            int i = 1;
+            for (String s : solverNames) {
+                line += " & " + s + "\\tnote{"+i+"}";
+                i++;
+            }
+            line += "\\\\\r\n\\hline\r\n\\endhead\r\n\\hline\r\n\\insertTableNotes\r\n\\endfoot\r\n";
+
+            // For every instance and solver, create a line with all info
+            for (String[] instance : mergedData) {
+                if (instance != null) {
+                    for (int j = 0; j < 4; j++) {
+                        String value = instance[j];
+                        if (value != null) {
+                            line += value;
+                        }
+                        line += " & ";
+                    }
+                    for (int j = 4; j < 4 + solverNames.length; j++) {
+                        String value = instance[j];
+                        if (value != null) {
+                            line += round(value);
+                        }
+                        line += " & ";
+                    }
+                    String value = instance[instance.length - 1];
+                    if (value != null) {
+                        line += round(value);
+                    }
+                    line += "\\\\\r\n";
+                }
+            }
+
+            line += "\\end{longtable}\r\n\\end{ThreePartTable}";
+            out.write(line);
+
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static String round(String s) {
+        DecimalFormat df = new DecimalFormat("0.000");
+        return df.format(Double.parseDouble(s));
     }
 
     /**

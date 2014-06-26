@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerGolden {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Record2Record", "Record2Record_asc", "Record2Record_desc", "Clarke-Wright heuristic"};
+    private static String[] solverNames = {"Record2Record_H2", "Record2Record_H3", "Record2Record_H4", "Clarke-Wright heuristic"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -272,7 +272,7 @@ public class DataMergerGolden {
                     "VRTR is the algorithm of \\citet{Li2005}." +
                     "RTR is our implementation, where the first one is not sorted," +
                     "in asc neighbors are sorted on ascending distance and in desc on descending distance.}";
-            line += "\r\n\\label{tab:rtrGolden}\r\n\\end{table}\r\n";
+            line += "\r\n\\label{tab:golden}\r\n\\end{table}\r\n";
             out.write(line);
 
             // Close the output stream

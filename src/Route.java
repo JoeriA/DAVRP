@@ -127,7 +127,7 @@ public class Route {
         if (add.getAssignedRoute() == routeNumber) {
             nrOfAssignedCustomers++;
         }
-        return (nrOfAssignedCustomers >= alpha * assignedCustomers.size()) && (weight - remove.getDemand() + add.getDemand() <= Q);
+        return ((double) nrOfAssignedCustomers >= alpha * (double) assignedCustomers.size()) && (weight - remove.getDemand() + add.getDemand() <= Q);
     }
 
     /**
@@ -154,7 +154,7 @@ public class Route {
             }
             newWeight += add.getDemand();
         }
-        return (nrOfAssignedCustomers >= alpha * assignedCustomers.size()) && (newWeight <= Q);
+        return ((double) nrOfAssignedCustomers >= alpha * (double) assignedCustomers.size()) && (newWeight <= Q);
     }
 
     /**
@@ -416,8 +416,17 @@ public class Route {
      */
     public boolean merge(Route other, Saving saving, double[][] c) {
 
-        Customer customerI = saving.getI();
-        Customer customerJ = saving.getJ();
+        Customer customerI;
+        Customer customerJ;
+        if (saving.getI().getRoute() == routeNumber) {
+            customerI = saving.getI();
+            customerJ = saving.getJ();
+        } else if (saving.getJ().getRoute() == routeNumber) {
+            customerJ = saving.getI();
+            customerI = saving.getJ();
+        } else {
+            return false;
+        }
 
         // Only merge when depot is between the customers
         if (beforeDepot(customerI) && other.afterDepot(customerJ)) {
@@ -439,7 +448,6 @@ public class Route {
             // Add all other edges from second route into this one
             for (Edge e : other.getEdges()) {
                 addEdge(e);
-                e.setRoute(routeNumber);
             }
             // Add new edge from saving
             addEdge(new Edge(customerJ, customerI, c));

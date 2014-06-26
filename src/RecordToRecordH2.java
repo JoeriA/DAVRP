@@ -8,7 +8,7 @@ import java.util.Collections;
  */
 public class RecordToRecordH2 implements Solver {
 
-    double epsilon = Math.pow(10.0, -10.0);
+    private double epsilon = Math.pow(10.0, -10.0);
     private double record;
     private double deviation;
     private int K;
@@ -64,7 +64,7 @@ public class RecordToRecordH2 implements Solver {
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record");
+        solution.setName("Record2Record_H2");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
@@ -238,7 +238,7 @@ public class RecordToRecordH2 implements Solver {
                 for (Route s : routeSet.getRoutes()) {
                     if (s != null && r != s) {
                         if (r.getWeight() + s.getWeight() <= Q) {
-                            System.out.println("Merge possible");
+//                            System.out.println("Merge possible");
                         }
                     }
                 }
