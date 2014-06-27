@@ -9,7 +9,7 @@ import java.util.Locale;
 public class DataMerger3 {
 
     private static String[][] instanceData;
-    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2","RTR_DAVRP_H4"};
+    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4"};
     private static double[][] solutionData;
     private static double[][] runTimeData;
 
@@ -112,7 +112,7 @@ public class DataMerger3 {
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H1", instance, 2);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 3);
         for (int i = 3; i < solverNames.length; i++) {
-            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i+ 1));
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 1));
         }
     }
 
@@ -128,7 +128,7 @@ public class DataMerger3 {
         readInfo(fileName, instance);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 3);
         for (int i = 3; i < solverNames.length; i++) {
-            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i+ 1));
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 1));
         }
     }
 
@@ -145,7 +145,7 @@ public class DataMerger3 {
         readFileRemy2("DAVRPCFRSStatistics_" + fileName, instance, 2);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 3);
         for (int i = 3; i < solverNames.length; i++) {
-            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i+ 1));
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 1));
         }
     }
 
@@ -162,7 +162,7 @@ public class DataMerger3 {
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_1_2", instance, 2);
         readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H2", instance, 3);
         for (int i = 3; i < solverNames.length; i++) {
-            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i+ 1));
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 1));
         }
     }
 
@@ -177,10 +177,10 @@ public class DataMerger3 {
         instanceData[instance][0] = fileName;
         readInfo(fileName, instance);
         for (int i = 1; i <= 2; i++) {
-            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + i, instance, (i+ 1));
+            readFileRemy2("DAVRPCFRSStatistics_" + fileName + "_H" + i, instance, (i + 1));
         }
         for (int i = 3; i < solverNames.length; i++) {
-            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i+ 1));
+            readFile("DAVRPInstance" + fileName + "_results_" + solverNames[i], instance, (i + 1));
         }
     }
 
@@ -365,17 +365,17 @@ public class DataMerger3 {
                 line += "\r\n";
             }
             // Write gaps
-            double[] gaps = getGaps(0,instanceData.length - 1);
+            double[] gaps = getGaps(0, instanceData.length - 1);
             line += "Avg. gap (%)\t\t\t\t";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += "\t"+ gaps[solver];
+                line += "\t" + gaps[solver];
             }
             line += "\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, instanceData.length - 1);
             line += "Average runtime (s)\t\t\t\t";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += "\t"+ runtimes[solver];
+                line += "\t" + runtimes[solver];
             }
 
             out.write(line);
@@ -401,7 +401,7 @@ public class DataMerger3 {
 
             line += "\\begin{ThreePartTable}\r\n\\begin{TableNotes}";
             for (int j = 0; j < solverNames.length; j++) {
-                line += "\r\n\\item ["+ (j+1) +"] " + solverNames[j] + ".";
+                line += "\r\n\\item [" + (j + 1) + "] " + solverNames[j] + ".";
             }
             line += "\r\n\\end{TableNotes}\r\n\\begin{longtable}{rrrrr";
             for (String ignored : solverNames) {
@@ -411,7 +411,7 @@ public class DataMerger3 {
             // Title
             line += "Instance & n & |$\\Omega$| & $\\alpha$ & Best known";
             for (int solver = 0; solver < solverNames.length; solver++) {
-                line += " & " + solverNames[solver] + "\\tnote{"+(solver+1)+"}";
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
             line += "\\\\\r\n\\hline\r\n\\endhead\r\n\\hline\r\n\\insertTableNotes\r\n\\endfoot\r\n";
 
@@ -432,17 +432,17 @@ public class DataMerger3 {
                 line += "\\\\\r\n";
             }
             // Write gaps
-            double[] gaps = getGaps(0,instanceData.length - 1);
+            double[] gaps = getGaps(0, instanceData.length - 1);
             line += "\\multicolumn{4}{l}{Avg. gap (\\%)} & ";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(gaps[solver]);
+                line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, instanceData.length - 1);
             line += "\\multicolumn{4}{l}{Average runtime (s)} & ";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(runtimes[solver]);
+                line += " & " + round(runtimes[solver]);
             }
 
             line += "\\\\\r\n\\end{longtable}\r\n\\end{ThreePartTable}";
@@ -481,22 +481,22 @@ public class DataMerger3 {
             line += "}\r\n\\hline\r\n";
             // Title
             for (int solver = 0; solver < solverNames.length; solver++) {
-                line += " & " + solverNames[solver] + "\\tnote{"+(solver+1)+"}";
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
             line += "\\\\\r\n\\hline\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0,9);
+            double[] gaps = getGaps(0, 9);
             line += "Average gap with best known (\\%)";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(gaps[solver]);
+                line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0,9);
+            double[] runtimes = getRuntimes(0, 9);
             line += "Average runtime (s)";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(runtimes[solver]);
+                line += " & " + round(runtimes[solver]);
             }
             line += "\\\\\r\n\\hline\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
@@ -529,22 +529,22 @@ public class DataMerger3 {
             line += "}\r\n\\hline\r\n";
             // Title
             for (int solver = 1; solver < solverNames.length; solver++) {
-                line += " & " + solverNames[solver] + "\\tnote{"+solver+"}";
+                line += " & " + solverNames[solver] + "\\tnote{" + solver + "}";
             }
             line += "\\\\\r\n\\hline\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0,44);
+            double[] gaps = getGaps(0, 44);
             line += "Average gap with best known (\\%)";
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(gaps[solver]);
+                line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0,44);
+            double[] runtimes = getRuntimes(0, 44);
             line += "Average runtime (s)";
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(runtimes[solver]);
+                line += " & " + round(runtimes[solver]);
             }
             line += "\\\\\r\n\\hline\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
@@ -577,22 +577,22 @@ public class DataMerger3 {
             line += "}\r\n\\hline\r\n";
             // Title
             for (int solver = 2; solver < solverNames.length; solver++) {
-                line += " & " + solverNames[solver] + "\\tnote{"+(solver-1)+"}";
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver - 1) + "}";
             }
             line += "\\\\\r\n\\hline\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0,64);
+            double[] gaps = getGaps(0, 64);
             line += "Average gap with best known (\\%)";
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(gaps[solver]);
+                line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0,64);
+            double[] runtimes = getRuntimes(0, 64);
             line += "Average runtime (s)";
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
-                line += " & "+ round(runtimes[solver]);
+                line += " & " + round(runtimes[solver]);
             }
             line += "\\\\\r\n\\hline\r\n\\end{tabular}";
             line = line.replace("_", "\\_");

@@ -111,13 +111,12 @@ public class RecordToRecordH3 implements Solver {
 
         for (double lambda : lambdas) {
 //            System.out.println("lambda: " + lambda);
-            cw.setLambda(lambda);
             Solution cwSolution;
             if (scenario == 0) {
-                cwSolution = cw.solve(dataSet);
+                cwSolution = cw.solve(dataSet, lambda);
                 routeSet = cwSolution.getRoutes()[0];
             } else {
-                cwSolution = cw.solve(dataSet, scenario);
+                cwSolution = cw.solve(dataSet, lambda, scenario);
                 routeSet = cwSolution.getRoutes()[scenario - 1];
             }
             record = cwSolution.getObjectiveValue();

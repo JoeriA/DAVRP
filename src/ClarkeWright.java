@@ -19,16 +19,62 @@ public class ClarkeWright implements Solver {
      */
     public ClarkeWright() {
 
-        lambda = 1.0;
     }
 
     /**
-     * Set lambda parameter
+     * Solve VRP for this dataset for scenario with all largest demands
+     * Run for all lambdas and return best solution
      *
-     * @param lambda lambda parameter
+     * @param dataSet dataset to be solved
      */
-    public void setLambda(double lambda) {
-        this.lambda = lambda;
+    public Solution solve(DataSet dataSet) {
+
+        // Get some data from dataset
+        nrOfScenarios = dataSet.getNumberOfScenarios();
+
+        // Get largest demands
+        int highestDemand;
+        for (Customer c : dataSet.getCustomers()) {
+            highestDemand = 0;
+            // Get highest demand of all scenarios
+            for (int k = 0; k < nrOfScenarios; k++) {
+                if (c.getDemandPerScenario()[k] > highestDemand) {
+                    highestDemand = c.getDemandPerScenario()[k];
+                }
+            }
+            c.setDemand(highestDemand);
+        }
+
+        Solution solution = new Solution();
+        solution.setName("Clarke-Wright heuristic2");
+
+        Long start = System.currentTimeMillis();
+
+        RouteSet bestRouteSet = new RouteSet();
+        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
+
+        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
+//        double[] lambdas = new double[]{0.4, 1.0};
+
+        for (double lambda : lambdas) {
+            Solution sol = solve(dataSet, lambda);
+            RouteSet rs = sol.getRoutes()[0];
+            if (rs.getRouteLength() < bestRouteSet.getRouteLength()) {
+                bestRouteSet = rs.getCopy();
+            }
+        }
+
+
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(bestRouteSet.getRouteLength());
+        RouteSet[] scenarioRoutes = new RouteSet[nrOfScenarios];
+        for (int i = 0; i < nrOfScenarios; i++) {
+            scenarioRoutes[i] = bestRouteSet;
+        }
+        solution.setRoutes(scenarioRoutes);
+
+        return solution;
     }
 
     /**
@@ -36,7 +82,9 @@ public class ClarkeWright implements Solver {
      *
      * @param dataSet dataset to be solved
      */
-    public Solution solve(DataSet dataSet) {
+    public Solution solve(DataSet dataSet, double lambda) {
+
+        this.lambda = lambda;
 
         // Get some data from dataset
         n = dataSet.getNumberOfCustomers() + 1;
@@ -68,7 +116,9 @@ public class ClarkeWright implements Solver {
      * @param scenario scenario number (starting with 1)
      * @return solution to the problem
      */
-    public Solution solve(DataSet dataSet, int scenario) {
+    public Solution solve(DataSet dataSet, double lambda, int scenario) {
+
+        this.lambda = lambda;
 
         // Get some data from dataset
         n = dataSet.getNumberOfCustomers() + 1;

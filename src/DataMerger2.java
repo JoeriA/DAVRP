@@ -8,7 +8,7 @@ import java.text.DecimalFormat;
 public class DataMerger2 {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2","RTR_DAVRP_H4"};
+    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4"};
     private static double[][] runTimeData;
     private static double[][] dataExact, dataH1, dataH2;
 
@@ -370,7 +370,7 @@ public class DataMerger2 {
 
             line += "\\begin{ThreePartTable}\r\n\\begin{TableNotes}";
             for (int j = 0; j < solverNames.length; j++) {
-                line += "\r\n\\item ["+ (j+1) +"] " + solverNames[j] + ".";
+                line += "\r\n\\item [" + (j + 1) + "] " + solverNames[j] + ".";
             }
             line += "\r\n\\end{TableNotes}\r\n\\begin{longtable}{rrrrr";
             for (String ignored : solverNames) {
@@ -381,7 +381,7 @@ public class DataMerger2 {
             line += "Instance & n & |$\\Omega$| & $\\alpha$ & Best known";
             int i = 1;
             for (String s : solverNames) {
-                line += " & " + s + "\\tnote{"+i+"}";
+                line += " & " + s + "\\tnote{" + i + "}";
                 i++;
             }
             line += "\\\\\r\n\\hline\r\n\\endhead\r\n\\hline\r\n\\insertTableNotes\r\n\\endfoot\r\n";

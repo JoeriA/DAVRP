@@ -26,6 +26,22 @@ public class DataSet {
 
     }
 
+//    public DataSet getCopy() {
+//        DataSet copy = new DataSet();
+//        copy.setAlpha(alpha);
+//        copy.setDropTime(dropTime);
+//        copy.setInstance(instance);
+//        copy.setMaxDuration(maxDuration);
+//        copy.setNumberOfCustomers(numberOfCustomers);
+//        copy.setNumberOfScenarios(numberOfScenarios);
+//        copy.setNumberOfVehicles(numberOfVehicles);
+//        copy.setScenarioProbabilities(scenarioProbabilities);
+//        copy.setTravelCosts(travelCosts);
+//        copy.setVehicleCapacity(vehicleCapacity);
+    // Create copy of customers
+//        return copy;
+//    }
+
     public int getDropTime() {
         return dropTime;
     }

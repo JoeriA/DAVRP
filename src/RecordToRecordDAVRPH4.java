@@ -143,7 +143,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
         return solution;
     }
 
-     /**
+    /**
      * Find one point move
      *
      * @param i   point to move
@@ -421,7 +421,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
                         if (twoOptMoveFeasible(e, f, 2)) {
                             twoOptMode = 2;
                             saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 3)){
+                        } else if (twoOptMoveFeasible(e, f, 3)) {
                             twoOptMode = 3;
                             saving = saving2;
                         } else if (twoOptMoveFeasible(e, f, 1)) {
@@ -439,7 +439,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
                         } else if (twoOptMoveFeasible(e, f, 2)) {
                             twoOptMode = 2;
                             saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 3)){
+                        } else if (twoOptMoveFeasible(e, f, 3)) {
                             twoOptMode = 3;
                             saving = saving2;
                         } else {
@@ -484,7 +484,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
         Route rF = routeSet.getRoutes()[f.getRoute()];
         ArrayList<Edge> eToF = new ArrayList<Edge>();
         ArrayList<Edge> fToE = new ArrayList<Edge>();
-        if(mode == 1 || mode == 2) {
+        if (mode == 1 || mode == 2) {
             Customer next = e.getTo();
             // Add edges to be removed from e and added to f to a list
             while (next.getId() != 0) {
@@ -588,7 +588,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
         Route rF = routeSet.getRoutes()[f.getRoute()];
         ArrayList<Customer> eToF = new ArrayList<Customer>();
         ArrayList<Customer> fToE = new ArrayList<Customer>();
-        if(mode == 1 || mode == 2) {
+        if (mode == 1 || mode == 2) {
             Customer next = e.getTo();
             // Add edges to be removed from e and added to f to a list
             while (next.getId() != 0) {

@@ -4,7 +4,7 @@ import java.util.Collections;
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
- * Now with second 2-opt
+ * H3 with speed improvement
  */
 public class RecordToRecordH4 implements Solver {
 
@@ -101,7 +101,7 @@ public class RecordToRecordH4 implements Solver {
             }
         }
 
-        ClarkeWright2 cw = new ClarkeWright2();
+        ClarkeWright cw = new ClarkeWright();
 
         RouteSet bestRouteSet = new RouteSet();
         bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);

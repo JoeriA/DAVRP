@@ -1,3 +1,6 @@
+import gurobi.GRBException;
+import ilog.concert.IloException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -6,14 +9,14 @@ import java.util.Collections;
  * Implementation record-to-record heuristic
  * Now with second 2-opt
  */
-public class RecordToRecordH2 implements Solver {
+public class RecordToRecordDAVRPTest implements Solver {
 
-    private double epsilon = Math.pow(10.0, -10.0);
+    double epsilon = Math.pow(10.0, -10.0);
     private double record;
     private double deviation;
+    private int D;
     private int K;
-    private int I;
-    private int M;
+    private int P;
     private int NBListSize;
     private double[][] c;
     private int Q;
@@ -23,11 +26,11 @@ public class RecordToRecordH2 implements Solver {
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH2() {
+    public RecordToRecordDAVRPTest() {
         // Parameters
-        I = 30;
         K = 5;
-        M = 1;
+        D = 30;
+        P = 2;
         NBListSize = 40;
         beta = 0.6;
     }
@@ -35,11 +38,11 @@ public class RecordToRecordH2 implements Solver {
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH2(int K, int I, int M, int NBListSize, double beta) {
+    public RecordToRecordDAVRPTest(int D, int K, int P, int NBListSize, double beta) {
         // Parameters
+        this.D = D;
         this.K = K;
-        this.I = I;
-        this.M = M;
+        this.P = P;
         this.NBListSize = NBListSize;
         this.beta = beta;
     }
@@ -49,7 +52,7 @@ public class RecordToRecordH2 implements Solver {
      *
      * @param dataSet data set to be solved
      */
-    public Solution solve(DataSet dataSet) {
+    public Solution solve(DataSet dataSet) throws GRBException, IloException {
 
         return solve(dataSet, 0);
     }
@@ -61,16 +64,16 @@ public class RecordToRecordH2 implements Solver {
      * @param scenario number of scenario (starts with 1)
      * @return solution to the data set
      */
-    public Solution solve(DataSet dataSet, int scenario) {
+    public Solution solve(DataSet dataSet, int scenario) throws GRBException, IloException {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record_H2");
+        solution.setName("Record2Record_H3");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
         Q = dataSet.getVehicleCapacity();
         c = dataSet.getTravelCosts();
-//        M = (int) Math.max((n - 1) / 2.0, 30);
+//        P = (int) Math.max((n - 1) / 2.0, 30);
 
         routeSet = new RouteSet();
         routeSet.setCustomers(dataSet.getCustomers());
@@ -101,6 +104,9 @@ public class RecordToRecordH2 implements Solver {
             }
         }
 
+        SolverClustering sc = new SolverClustering();
+        Solution clusters = sc.solve(dataSet);
+
         ClarkeWright cw = new ClarkeWright();
 
         RouteSet bestRouteSet = new RouteSet();
@@ -110,6 +116,7 @@ public class RecordToRecordH2 implements Solver {
 //        double[] lambdas = new double[]{0.6, 1.4, 1.6,};
 
         for (double lambda : lambdas) {
+//            System.out.println("lambda: " + lambda);
             Solution cwSolution;
             if (scenario == 0) {
                 cwSolution = cw.solve(dataSet, lambda);
@@ -119,50 +126,61 @@ public class RecordToRecordH2 implements Solver {
                 routeSet = cwSolution.getRoutes()[scenario - 1];
             }
             record = cwSolution.getObjectiveValue();
-            double globalRecord = record;
             routeSet.setRouteLength(record);
             deviation = 0.01 * record;
-            double globalDeviation = deviation;
-            RouteSet globalSolution = routeSet.getCopy();
+            RouteSet recordSet = routeSet.getCopy();
 
-            for (int m = 0; m < M; m++) {
-                double initial = routeSet.getRouteLength();
-                optimizationLoop();
-                if (routeSet.getRouteLength() < globalRecord) {
-                    globalRecord = routeSet.getRouteLength();
-                    globalDeviation = 0.01 * globalRecord;
-                    globalSolution = routeSet.getCopy();
+            int p = 0;
+            int k = 0;
+            while (p < P) {
+//                System.out.println("p: " + p);
+//                System.out.println("k: " + k);
+                // Start improvement iterations
+                for (int d = 0; d < D; d++) {
+                    // Moves with record to record
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            findOnePointMove(i, true);
+                            findTwoPointMove(i, true);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                        }
+                    }
                 }
-                // Create copy before perturbing
-                RouteSet routeCopy = routeSet.getCopy();
-                // Perturb the solution
-                perturb();
+                // Downhill moves
+                boolean moveMade;
+                do {
+                    moveMade = false;
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            boolean onePoint = findOnePointMove(i, false);
+                            boolean twoPoint = findTwoPointMove(i, false);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                            if (onePoint || twoPoint || twoOpt) {
+                                moveMade = true;
+                            }
+                        }
+                    }
+                } while (moveMade);
                 // Update record when necessary
-                if (routeSet.getRouteLength() < globalRecord) {
-                    globalRecord = routeSet.getRouteLength();
-                    globalDeviation = 0.01 * globalRecord;
-                    globalSolution = routeSet.getCopy();
+                if (routeSet.getRouteLength() < record - epsilon) {
+                    record = routeSet.getRouteLength();
+                    deviation = 0.01 * record;
+                    recordSet = routeSet.getCopy();
+                    k = 0;
+//                    System.out.println("record: " + record);
                 }
-                optimizationLoop();
-                // Update record when necessary
-                if (routeSet.getRouteLength() < globalRecord) {
-                    globalRecord = routeSet.getRouteLength();
-                    globalDeviation = 0.01 * globalRecord;
-                    globalSolution = routeSet.getCopy();
-                }
-                // Restore copy if perturbing results in worse solution
-                if (globalRecord + globalDeviation < routeSet.getRouteLength()) {
-                    routeSet = routeCopy;
-                }
-                // Check if this solution is better than best solution
-                if (globalSolution.getRouteLength() < bestRouteSet.getRouteLength()) {
-                    bestRouteSet = globalSolution.getCopy();
-                }
-                if (routeSet.getRouteLength() >= initial) {
-                    break;
+                k++;
+                if (k >= K) {
+                    perturb();
+                    p++;
+                    k = 0;
                 }
             }
-            mergeRoutes();
+            if (record < bestRouteSet.getRouteLength()) {
+                bestRouteSet = recordSet;
+            }
 //            System.out.println("Lambda: " + lambda + ", value: " + globalSolution.getRouteLength());
         }
         Long end = System.currentTimeMillis();
@@ -186,63 +204,6 @@ public class RecordToRecordH2 implements Solver {
         }
 
         return solution;
-    }
-
-    private void optimizationLoop() {
-        // Start improvement iterations
-        for (int k = 0; k < K; k++) {
-            for (int count = 0; count < I; count++) {
-                // Moves with record to record
-                boolean moveMade = false;
-                for (Customer i : routeSet.getCustomers()) {
-                    if (i.getId() != 0) {
-                        boolean onePoint = findOnePointMove(i, true);
-                        boolean twoPoint = findTwoPointMove(i, true);
-                        Route r = routeSet.getRoutes()[i.getRoute()];
-                        boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), true);
-                        if (!moveMade && (onePoint || twoPoint || twoOpt)) {
-                            moveMade = true;
-                        }
-                    }
-                }
-                if (!moveMade) {
-                    break;
-                }
-                // Update record when necessary
-                if (routeSet.getRouteLength() < record) {
-                    record = routeSet.getRouteLength();
-                    deviation = 0.01 * record;
-                }
-            }
-            // Downhill moves
-            for (Customer i : routeSet.getCustomers()) {
-                if (i.getId() != 0) {
-                    findOnePointMove(i, false);
-                    findTwoPointMove(i, false);
-                    Route r = routeSet.getRoutes()[i.getRoute()];
-                    findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                }
-            }
-            // Update record when necessary
-            if (routeSet.getRouteLength() < record) {
-                record = routeSet.getRouteLength();
-                deviation = 0.01 * record;
-            }
-        }
-    }
-
-    private void mergeRoutes() {
-        for (Route r : routeSet.getRoutes()) {
-            if (r != null) {
-                for (Route s : routeSet.getRoutes()) {
-                    if (s != null && r != s) {
-                        if (r.getWeight() + s.getWeight() <= Q) {
-//                            System.out.println("Merge possible");
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /**
