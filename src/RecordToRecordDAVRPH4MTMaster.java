@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.concurrent.*;
 
 /**
@@ -8,20 +7,13 @@ import java.util.concurrent.*;
  */
 public class RecordToRecordDAVRPH4MTMaster implements Solver {
 
-    private double epsilon = Math.pow(10.0, -10.0);
-    private double record;
-    private double deviation;
     private int K;
     private int D;
     private int P;
     private int K2;
     private int D2;
     private int NBListSize;
-    private double[][] c;
-    private int Q;
-    private double alpha;
     private double beta;
-    private RouteSet routeSet;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
@@ -49,9 +41,6 @@ public class RecordToRecordDAVRPH4MTMaster implements Solver {
 
         // Get some data from data set
         int o = dataSet.getNumberOfScenarios();
-        Q = dataSet.getVehicleCapacity();
-        c = dataSet.getTravelCosts();
-        alpha = dataSet.getAlpha();
 
         Long start = System.currentTimeMillis();
 
