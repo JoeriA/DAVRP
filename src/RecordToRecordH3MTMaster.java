@@ -29,6 +29,18 @@ public class RecordToRecordH3MTMaster implements Solver {
     }
 
     /**
+     * Implementation of record-to-record heuristic for the DAVRP
+     */
+    public RecordToRecordH3MTMaster(int D, int K, int P, int NBListSize, double beta) {
+        // Parameters
+        this.D = D;
+        this.K = K;
+        this.P = P;
+        this.NBListSize = NBListSize;
+        this.beta = beta;
+    }
+
+    /**
      * Solve VRP for this data set
      *
      * @param dataSet data set to be solved
@@ -48,7 +60,7 @@ public class RecordToRecordH3MTMaster implements Solver {
     public Solution solve(DataSet dataSet, int scenario) {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record_H3");
+        solution.setName("Record2Record_H3_MT");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;

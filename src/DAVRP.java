@@ -31,14 +31,14 @@ class DAVRP {
 //        Solver solver = new RecordToRecordDAVRP();
 //        Solver solver = new RecordToRecordDAVRPImproved();
 //        Solver solver = new RecordToRecordH();
-        Solver solver = new RecordToRecordH3MTMaster();
+//        Solver solver = new RecordToRecordH3MTMaster();
 //        Solver solver = new RecordToRecordDAVRPH();
-//        Solver solver = new RecordToRecordDAVRPH4();
+        Solver solver = new RecordToRecordDAVRPH4MTMaster();
 //        Solver solver = new RecordToRecordDAVRP2();
 
         int start = 1;
-        int end = 0;
-        boolean testCMT = true;
+        int end = 125;
+        boolean testCMT = false;
         boolean testGolden = false;
 
         boolean silent = true;
@@ -175,8 +175,8 @@ class DAVRP {
         // Write y
         try {
             // Create file
-//            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
-            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
+//            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
