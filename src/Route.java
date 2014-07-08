@@ -17,6 +17,9 @@ public class Route {
 
     private ArrayList<Customer> assignedCustomers;
 
+    public void setRouteNumber(int routeNumber) {
+        this.routeNumber = routeNumber;
+    }
 
     /**
      * Create an empty route
@@ -54,6 +57,23 @@ public class Route {
         this.assignedCustomers = assignedCustomers;
         this.routeNumber = routeNumber;
         this.assignedCustomersInRoute = assignedCustomersInRoute;
+    }
+
+    public void addAssignedCustomer(Customer customer) {
+        customer.setAssignedRoute(routeNumber);
+        if (assignedCustomers == null) {
+            assignedCustomers = new ArrayList<Customer>();
+            assignedCustomersInRoute = 0;
+        }
+        if (customer.getRoute() == routeNumber) {
+            assignedCustomersInRoute++;
+        }
+        assignedCustomers.add(customer);
+    }
+
+    public void emptyAssignment() {
+        assignedCustomers = new ArrayList<Customer>();
+        assignedCustomersInRoute = 0;
     }
 
     /**

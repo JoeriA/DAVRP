@@ -7,44 +7,32 @@ import java.util.Collections;
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
- * Now with second 2-opt
+ * RTR DAVRP with clustering
  */
-public class RecordToRecordDAVRPTest implements Solver {
+public class RecordToRecordDAVRP2 implements Solver {
 
-    double epsilon = Math.pow(10.0, -10.0);
+    private double epsilon = Math.pow(10.0, -10.0);
     private double record;
     private double deviation;
-    private int D;
-    private int K;
-    private int P;
+    private int K2;
+    private int D2;
     private int NBListSize;
     private double[][] c;
     private int Q;
+    private double alpha;
     private double beta;
     private RouteSet routeSet;
+    private int n;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordDAVRPTest() {
+    public RecordToRecordDAVRP2() {
         // Parameters
-        K = 5;
-        D = 30;
-        P = 2;
+        K2 = 5;
+        D2 = 5;
         NBListSize = 40;
         beta = 0.6;
-    }
-
-    /**
-     * Implementation of record-to-record heuristic for the DAVRP
-     */
-    public RecordToRecordDAVRPTest(int D, int K, int P, int NBListSize, double beta) {
-        // Parameters
-        this.D = D;
-        this.K = K;
-        this.P = P;
-        this.NBListSize = NBListSize;
-        this.beta = beta;
     }
 
     /**
@@ -54,31 +42,20 @@ public class RecordToRecordDAVRPTest implements Solver {
      */
     public Solution solve(DataSet dataSet) throws GRBException, IloException {
 
-        return solve(dataSet, 0);
-    }
-
-    /**
-     * Solve VRP for this scenario
-     *
-     * @param dataSet  data set to be solved
-     * @param scenario number of scenario (starts with 1)
-     * @return solution to the data set
-     */
-    public Solution solve(DataSet dataSet, int scenario) throws GRBException, IloException {
-
         Solution solution = new Solution();
-        solution.setName("Record2Record_c");
+        solution.setName("RTR_DAVRP_2");
 
         // Get some data from data set
-        int n = dataSet.getNumberOfCustomers() + 1;
+        n = dataSet.getNumberOfCustomers() + 1;
+        int o = dataSet.getNumberOfScenarios();
         Q = dataSet.getVehicleCapacity();
         c = dataSet.getTravelCosts();
-//        P = (int) Math.max((n - 1) / 2.0, 30);
+        alpha = dataSet.getAlpha();
+
+        Long start = System.currentTimeMillis();
 
         routeSet = new RouteSet();
         routeSet.setCustomers(dataSet.getCustomers());
-
-        Long start = System.currentTimeMillis();
 
         // Create neighbor lists
         for (Customer customer : routeSet.getCustomers()) {
@@ -104,151 +81,142 @@ public class RecordToRecordDAVRPTest implements Solver {
             }
         }
 
+        // Obtain clustering results
         SolverClustering sc = new SolverClustering();
         Solution clusters = sc.solve(dataSet);
 
+        // Create routes with clusters
         ClarkeWright cw = new ClarkeWright();
+        Solution basisSolution = cw.solve(dataSet, clusters);
+        assignRoutes(basisSolution, clusters.getzSol());
+        solution.setAssignments(basisSolution.getAssignments());
 
-        Solution basisSolution = cw.solve(dataSet, 1.0, clusters);
-        assignRoutes(basisSolution.getRoutes(),clusters.getzSol());
-        return basisSolution;
+        // Create place to store intermediate solutions
+        RouteSet[] solutions = new RouteSet[o];
+        double objectiveValue = 0.0;
 
-//        RouteSet bestRouteSet = new RouteSet();
-//        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
-//
-//        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-////        double[] lambdas = new double[]{0.6, 1.4, 1.6,};
-//
-//        for (double lambda : lambdas) {
-////            System.out.println("lambda: " + lambda);
-//            Solution cwSolution;
-//            if (scenario == 0) {
-//                cwSolution = cw.solve(dataSet, lambda);
-//                routeSet = cwSolution.getRoutes()[0];
-//            } else {
-//                cwSolution = cw.solve(dataSet, lambda, scenario);
-//                routeSet = cwSolution.getRoutes()[scenario - 1];
-//            }
-//            record = cwSolution.getObjectiveValue();
-//            routeSet.setRouteLength(record);
-//            deviation = 0.01 * record;
-//            RouteSet recordSet = routeSet.getCopy();
-//
-//            int p = 0;
-//            int k = 0;
-//            while (p < P) {
-////                System.out.println("p: " + p);
-////                System.out.println("k: " + k);
-//                // Start improvement iterations
-//                for (int d = 0; d < D; d++) {
-//                    // Moves with record to record
-//                    for (Customer i : routeSet.getCustomers()) {
-//                        if (i.getId() != 0) {
-//                            findOnePointMove(i, true);
-//                            findTwoPointMove(i, true);
-//                            Route r = routeSet.getRoutes()[i.getRoute()];
-//                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
+        // Optimize basis solution for all scenarios
+        for (int scenario = 0; scenario < o; scenario++) {
+
+            // Set demands of this scenario
+            routeSet = basisSolution.getRoutes()[scenario];
+            for (Customer customer : routeSet.getCustomers()) {
+                customer.setDemand(customer.getDemandPerScenario()[scenario]);
+            }
+            for (Route route : routeSet.getRoutes()) {
+                if (route != null) {
+                    route.recalculateWeight();
+                }
+            }
+
+//            // Insert skipped customers in better location
+//            if (routeSet.getRoutes()[0] != null) {
+//                Customer[] skippedCustomers = routeSet.getRoutes()[0].getCustomers();
+//                boolean allMoved = true;
+//                for (int i = 1; i < skippedCustomers.length; i++) {
+//                    if (skippedCustomers[i] != null) {
+//                        applyBestInsertion(skippedCustomers[i]);
+//                        // Check whether customer is moved to another route
+//                        if (skippedCustomers[i] != null) {
+//                            allMoved = false;
 //                        }
 //                    }
 //                }
-//                // Downhill moves
-//                boolean moveMade;
-//                do {
-//                    moveMade = false;
-//                    for (Customer i : routeSet.getCustomers()) {
-//                        if (i.getId() != 0) {
-//                            boolean onePoint = findOnePointMove(i, false);
-//                            boolean twoPoint = findTwoPointMove(i, false);
-//                            Route r = routeSet.getRoutes()[i.getRoute()];
-//                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-//                            if (onePoint || twoPoint || twoOpt) {
-//                                moveMade = true;
-//                            }
-//                        }
-//                    }
-//                } while (moveMade);
-//                // Update record when necessary
-//                if (routeSet.getRouteLength() < record - epsilon) {
-//                    record = routeSet.getRouteLength();
-//                    deviation = 0.01 * record;
-//                    recordSet = routeSet.getCopy();
-//                    k = 0;
-////                    System.out.println("record: " + record);
-//                }
-//                k++;
-//                if (k >= K) {
-//                    perturb();
-//                    p++;
-//                    k = 0;
+//                // Remove route if all customers are moved
+//                if (allMoved) {
+//                    routeSet.getRoutes()[0] = null;
 //                }
 //            }
-//            if (record < bestRouteSet.getRouteLength()) {
-//                bestRouteSet = recordSet;
-//            }
-////            System.out.println("Lambda: " + lambda + ", value: " + globalSolution.getRouteLength());
-//        }
-//        Long end = System.currentTimeMillis();
-//        solution.setRunTime((end - start) / 1000.0);
-//        solution.setObjectiveValue(bestRouteSet.getRouteLength());
-//        solution.setAssignments(bestRouteSet.assignments());
-//        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
-//        if (scenario == 0) {
-//            for (int i = 0; i < sol.length; i++) {
-//                sol[i] = bestRouteSet;
-//            }
-//        } else {
-//            sol[scenario - 1] = bestRouteSet;
-//        }
-//        solution.setRoutes(sol);
-//
-//        SolutionChecker checker = new SolutionChecker();
-//        if (!checker.checkRoutes(solution, dataSet)) {
-//            System.out.println("Solution is not feasible");
-//            throw new IllegalStateException("Solution is not feasible");
-//        }
-//
-//        return solution;
+
+            for (Customer customer : routeSet.getCustomers()) {
+                if (customer.getId() != 0 && customer.getAssignedRoute() != customer.getRoute()) {
+                    double saving = applyBestInsertion(customer);
+                    routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+                }
+            }
+            for (int i = 0; i < routeSet.getRoutes().length; i++) {
+                if (routeSet.getRoutes()[i] != null && routeSet.getRoutes()[i].getEdges().size() == 0) {
+                    routeSet.getRoutes()[i] = null;
+                }
+            }
+
+            record = routeSet.getRouteLength();
+            deviation = 0.01 * record;
+            RouteSet recordSet = routeSet.getCopy();
+
+            int k = 0;
+            while (k < K2) {
+//                System.out.println("p: " + p);
+//                System.out.println("k: " + k);
+                // Start improvement iterations
+                for (int d = 0; d < D2; d++) {
+                    // Moves with record to record
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            findOnePointMove(i, true);
+                            findTwoPointMove(i, true);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                        }
+                    }
+                }
+                // Downhill moves
+                boolean moveMade;
+                do {
+                    moveMade = false;
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            boolean onePoint = findOnePointMove(i, false);
+                            boolean twoPoint = findTwoPointMove(i, false);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                            if (onePoint || twoPoint || twoOpt) {
+                                moveMade = true;
+                            }
+                        }
+                    }
+                } while (moveMade);
+                // Update record when necessary
+                if (routeSet.getRouteLength() < record - epsilon) {
+                    record = routeSet.getRouteLength();
+                    deviation = 0.01 * record;
+                    recordSet = routeSet.getCopy();
+                    k = 0;
+//                    System.out.println("record: " + record);
+                }
+                k++;
+            }
+            solutions[scenario] = recordSet.getCopy();
+            objectiveValue += dataSet.getScenarioProbabilities()[scenario] * recordSet.getRouteLength();
+        }
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setRoutes(solutions);
+        solution.setObjectiveValue(objectiveValue);
+
+        SolutionChecker checker = new SolutionChecker();
+        if (!checker.checkRoutes(solution, dataSet)) {
+            System.out.println("Solution is not feasible");
+            throw new IllegalStateException("Solution is not feasible");
+        }
+
+        return solution;
     }
 
-    private void assignRoutes(RouteSet[] routeSets, double[][] zSol) {
+    private void assignRoutes(Solution solution, double[][] zSol) {
+        int[] assignments = new int[n];
+        RouteSet[] routeSets = solution.getRoutes();
         for (RouteSet routeSet : routeSets) {
             for (int i = 1; i < zSol.length; i++) {
                 for (int j = 1; j < zSol[i].length; j++) {
                     if (zSol[i][j] == 1) {
                         routeSet.getRoutes()[j].addAssignedCustomer(routeSet.getCustomers()[i]);
+                        assignments[i] = j;
                     }
                 }
             }
         }
-    }
-
-    /**
-     * Perturb the solution
-     */
-    private void perturb() {
-        ArrayList<Customer> perturbC = new ArrayList<Customer>();
-        Route route;
-        Customer customer;
-        double sI;
-        for (int i = 1; i < routeSet.getCustomers().length; i++) {
-            sI = 0.0;
-            customer = routeSet.getCustomers()[i];
-            route = routeSet.getRoutes()[routeSet.getCustomers()[i].getRoute()];
-            sI += route.getEdgeTo(customer).getDistance();
-            sI += route.getEdgeFrom(customer).getDistance();
-            sI -= c[route.getEdgeTo(customer).getFrom().getId()][route.getEdgeFrom(customer).getTo().getId()];
-            customer.setR(customer.getDemand() / sI);
-            perturbC.add(customer);
-        }
-        Collections.sort(perturbC);
-
-        int m = Math.min(20, routeSet.getCustomers().length / 10);
-        double saving = 0.0;
-        for (int j = 0; j < m; j++) {
-            customer = perturbC.get(j);
-            saving += applyBestInsertion(customer);
-        }
-        routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+        solution.setAssignments(assignments);
     }
 
     /**
@@ -318,24 +286,27 @@ public class RecordToRecordDAVRPTest implements Solver {
             edges[0] = rN.getEdgeTo(cN);
             edges[1] = rN.getEdgeFrom(cN);
             for (Edge e : edges) {
-                // Only if customer i is not already in edge e and new tour is allowed
-                if (e.getFrom().getId() != i.getId() && e.getTo().getId() != i.getId() && i.getDemand() + rN.getWeight() <= Q) {
-                    saving = 0.0;
-                    // Remove customer i from its current route
-                    saving += iRoute.getEdgeTo(i).getDistance();
-                    saving += iRoute.getEdgeFrom(i).getDistance();
-                    saving -= c[iRoute.getEdgeTo(i).getFrom().getId()][iRoute.getEdgeFrom(i).getTo().getId()];
-                    // Insert customer i in edge e
-                    saving += e.getDistance();
-                    saving -= c[i.getId()][e.getFrom().getId()];
-                    saving -= c[i.getId()][e.getTo().getId()];
-                    if (saving > epsilon) {
-                        onePointMove(i, e);
-                        routeSet.setRouteLength(routeSet.getRouteLength() - saving);
-                        return true;
-                    } else if (saving > largestSaving) {
-                        largestSaving = saving;
-                        largestSavingEdge = e;
+                // Only if customer i is not already in edge e
+                if (e.getFrom().getId() != i.getId() && e.getTo().getId() != i.getId()) {
+                    // If the move is feasible
+                    if (rN.addCustomerFeasible(i, Q) && iRoute.removeCustomerFeasible(i, alpha)) {
+                        saving = 0.0;
+                        // Remove customer i from its current route
+                        saving += iRoute.getEdgeTo(i).getDistance();
+                        saving += iRoute.getEdgeFrom(i).getDistance();
+                        saving -= c[iRoute.getEdgeTo(i).getFrom().getId()][iRoute.getEdgeFrom(i).getTo().getId()];
+                        // Insert customer i in edge e
+                        saving += e.getDistance();
+                        saving -= c[i.getId()][e.getFrom().getId()];
+                        saving -= c[i.getId()][e.getTo().getId()];
+                        if (saving > epsilon) {
+                            onePointMove(i, e);
+                            routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+                            return true;
+                        } else if (saving > largestSaving) {
+                            largestSaving = saving;
+                            largestSavingEdge = e;
+                        }
                     }
                 }
             }
@@ -435,8 +406,8 @@ public class RecordToRecordDAVRPTest implements Solver {
                         saving -= c[beforeJ.getId()][i.getId()];
                         saving -= c[afterJ.getId()][i.getId()];
                     }
-                    // If i and j in different routes and new routes do not exceed vehicle capacity
-                } else if (iRoute.getWeight() + j.getDemand() - i.getDemand() <= Q && jRoute.getWeight() + i.getDemand() - j.getDemand() <= Q) {
+                    // If i and j in different routes and new routes are feasible
+                } else if (iRoute.swapCustomersFeasible(i, j, alpha, Q) && jRoute.swapCustomersFeasible(j, i, alpha, Q)) {
                     // Delete i from route i
                     saving += iRoute.getEdgeTo(i).getDistance();
                     saving += iRoute.getEdgeFrom(i).getDistance();
@@ -574,16 +545,26 @@ public class RecordToRecordDAVRPTest implements Solver {
                         if (twoOptMoveFeasible(e, f, 2)) {
                             twoOptMode = 2;
                             saving = saving2;
+                        } else if (twoOptMoveFeasible(e, f, 3)) {
+                            twoOptMode = 3;
+                            saving = saving2;
                         } else if (twoOptMoveFeasible(e, f, 1)) {
                             twoOptMode = 1;
+                        } else if (twoOptMoveFeasible(e, f, 4)) {
+                            twoOptMode = 4;
                         } else {
                             continue;
                         }
                     } else {
                         if (twoOptMoveFeasible(e, f, 1)) {
                             twoOptMode = 1;
+                        } else if (twoOptMoveFeasible(e, f, 4)) {
+                            twoOptMode = 4;
                         } else if (twoOptMoveFeasible(e, f, 2)) {
                             twoOptMode = 2;
+                            saving = saving2;
+                        } else if (twoOptMoveFeasible(e, f, 3)) {
+                            twoOptMode = 3;
                             saving = saving2;
                         } else {
                             continue;
@@ -619,74 +600,89 @@ public class RecordToRecordDAVRPTest implements Solver {
      * @return true if a move is made, false otherwise
      */
     private boolean twoOptMove(Edge e, Edge f, int mode) {
-        if (mode == 0) {
+        if (e.getRoute() == f.getRoute()) {
             routeSet.getRoutes()[e.getRoute()].twoOptMove(e, f, c);
             return true;
         }
         Route rE = routeSet.getRoutes()[e.getRoute()];
         Route rF = routeSet.getRoutes()[f.getRoute()];
-        ArrayList<Edge> edgesR1 = new ArrayList<Edge>();
-        ArrayList<Edge> edgesR2 = new ArrayList<Edge>();
-        Customer next = e.getTo();
-        // Add edges to be removed from e and added to f to a list
-        while (next.getId() != 0) {
-            edgesR1.add(rE.getEdgeFrom(next));
-            next = rE.getEdgeFrom(next).getTo();
-        }
-        // Add edges to be removed from f and added to e to a list
-        if (mode == 1) {
-            next = f.getTo();
+        ArrayList<Edge> eToF = new ArrayList<Edge>();
+        ArrayList<Edge> fToE = new ArrayList<Edge>();
+        if (mode == 1 || mode == 2) {
+            Customer next = e.getTo();
+            // Add edges to be removed from e and added to f to a list
             while (next.getId() != 0) {
-                edgesR2.add(rF.getEdgeFrom(next));
+                eToF.add(rE.getEdgeFrom(next));
+                next = rE.getEdgeFrom(next).getTo();
+            }
+        } else if (mode == 3 || mode == 4) {
+            Customer next = e.getFrom();
+            // Add edges to be removed from e and added to f to a list
+            while (next.getId() != 0) {
+                eToF.add(rE.getEdgeTo(next));
+                next = rE.getEdgeTo(next).getFrom();
+            }
+        }
+        if (mode == 1 || mode == 3) {
+            // Add edges to be removed from f and added to e to a list
+            Customer next = f.getTo();
+            while (next.getId() != 0) {
+                fToE.add(rF.getEdgeFrom(next));
                 next = rF.getEdgeFrom(next).getTo();
             }
-        } else if (mode == 2) {
-            next = f.getFrom();
+        } else if (mode == 2 || mode == 4) {
+            // Add edges to be removed from f and added to e to a list
+            Customer next = f.getFrom();
             while (next.getId() != 0) {
-                edgesR2.add(rF.getEdgeTo(next));
+                fToE.add(rF.getEdgeTo(next));
                 next = rF.getEdgeTo(next).getFrom();
             }
-        } else {
-            System.out.println("Mode two-opt move not correct");
         }
-        // Remove edges
+        // Perform move
         rE.removeEdge(e);
         rF.removeEdge(f);
-        for (Edge edge : edgesR1) {
+        for (Edge edge : eToF) {
             rE.removeEdge(edge);
         }
-        for (Edge edge : edgesR2) {
+        for (Edge edge : fToE) {
             rF.removeEdge(edge);
         }
-        // Add edges
         if (mode == 1) {
-            for (Edge edge : edgesR2) {
+            for (Edge edge : fToE) {
                 rE.addEdge(edge);
             }
-            for (Edge edge : edgesR1) {
+            for (Edge edge : eToF) {
                 rF.addEdge(edge);
             }
             rE.addEdge(new Edge(e.getFrom(), f.getTo(), c));
             rF.addEdge(new Edge(f.getFrom(), e.getTo(), c));
         } else if (mode == 2) {
-            for (Edge edge : edgesR2) {
+            for (Edge edge : fToE) {
                 rE.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
             }
-            for (Edge edge : edgesR1) {
+            for (Edge edge : eToF) {
                 rF.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
             }
             rE.addEdge(new Edge(e.getFrom(), f.getFrom(), c));
             rF.addEdge(new Edge(e.getTo(), f.getTo(), c));
-        } else {
-            System.out.println("Mode two-opt move not correct");
-        }
-
-        // Remove a route if necessary
-        if (f.getFrom() == e.getTo() && mode == 1) {
-            routeSet.getRoutes()[f.getRoute()] = null;
-        }
-        if (e.getFrom() == f.getTo() && mode == 1) {
-            routeSet.getRoutes()[e.getRoute()] = null;
+        } else if (mode == 3) {
+            for (Edge edge : fToE) {
+                rE.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
+            }
+            for (Edge edge : eToF) {
+                rF.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
+            }
+            rE.addEdge(new Edge(f.getTo(), e.getTo(), c));
+            rF.addEdge(new Edge(f.getFrom(), e.getFrom(), c));
+        } else if (mode == 4) {
+            for (Edge edge : fToE) {
+                rE.addEdge(edge);
+            }
+            for (Edge edge : eToF) {
+                rF.addEdge(edge);
+            }
+            rE.addEdge(new Edge(f.getFrom(), e.getTo(), c));
+            rF.addEdge(new Edge(e.getFrom(), f.getTo(), c));
         }
 
         return true;
@@ -706,43 +702,48 @@ public class RecordToRecordDAVRPTest implements Solver {
         if (e.getRoute() == f.getRoute()) {
             return true;
         }
-        if (mode == 1 && (e.getTo() == f.getTo() || e.getFrom() == f.getFrom())) {
+        if ((mode == 1 || mode == 4) && (e.getTo() == f.getTo() || e.getFrom() == f.getFrom())) {
             return false;
         }
-        if (mode == 2 && (e.getTo() == f.getFrom() || f.getTo() == e.getFrom())) {
+        if ((mode == 2 || mode == 3) && (e.getTo() == f.getFrom() || f.getTo() == e.getFrom())) {
             return false;
         }
         Route rE = routeSet.getRoutes()[e.getRoute()];
         Route rF = routeSet.getRoutes()[f.getRoute()];
-        int q1 = rE.getWeight();
-        int q2 = rF.getWeight();
-        Customer next = e.getTo();
-        // Add edges to be removed from e and added to f to a list
-        while (next.getId() != 0) {
-            q1 -= next.getDemand();
-            q2 += next.getDemand();
-            next = rE.getEdgeFrom(next).getTo();
-        }
-        if (mode == 1) {
-            // Add edges to be removed from f and added to e to a list
-            next = f.getTo();
+        ArrayList<Customer> eToF = new ArrayList<Customer>();
+        ArrayList<Customer> fToE = new ArrayList<Customer>();
+        if (mode == 1 || mode == 2) {
+            Customer next = e.getTo();
+            // Add edges to be removed from e and added to f to a list
             while (next.getId() != 0) {
-                q1 += next.getDemand();
-                q2 -= next.getDemand();
+                eToF.add(next);
+                next = rE.getEdgeFrom(next).getTo();
+            }
+        } else if (mode == 3 || mode == 4) {
+            Customer next = e.getFrom();
+            // Add edges to be removed from e and added to f to a list
+            while (next.getId() != 0) {
+                eToF.add(next);
+                next = rE.getEdgeTo(next).getFrom();
+            }
+        }
+        if (mode == 1 || mode == 3) {
+            // Add edges to be removed from f and added to e to a list
+            Customer next = f.getTo();
+            while (next.getId() != 0) {
+                fToE.add(next);
                 next = rF.getEdgeFrom(next).getTo();
             }
-        } else if (mode == 2) {
+        } else if (mode == 2 || mode == 4) {
             // Add edges to be removed from f and added to e to a list
-            next = f.getFrom();
+            Customer next = f.getFrom();
             while (next.getId() != 0) {
-                q1 += next.getDemand();
-                q2 -= next.getDemand();
+                fToE.add(next);
                 next = rF.getEdgeTo(next).getFrom();
             }
-        } else {
-            System.out.println("Mode two-opt move not correct");
         }
+
         // Check if move is feasible
-        return !(q1 > Q || q2 > Q);
+        return (rE.swapCustomersFeasible(eToF, fToE, alpha, Q) && rF.swapCustomersFeasible(fToE, eToF, alpha, Q));
     }
 }

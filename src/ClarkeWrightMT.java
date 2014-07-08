@@ -1,11 +1,12 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation Clarke Wright heuristic
  */
-public class ClarkeWright implements Solver {
+public class ClarkeWrightMT implements Callable {
 
     private double lambda;
     private Customer[] customers;
@@ -13,149 +14,71 @@ public class ClarkeWright implements Solver {
     private int nrOfScenarios;
     private int Q;
     private double[][] c;
+    private DataSet dataSet;
+    private int scenario;
+    private Solution solutionClustering;
 
     /**
      * Implementation of Clarke-Wright heuristic for the DAVRP
      */
-    public ClarkeWright() {
-
+    public ClarkeWrightMT(DataSet dataSet) {
+        this.dataSet = dataSet;
+        this.lambda = 1.0;
     }
 
-    /**
-     * Solve VRP for this dataset for scenario with all largest demands
-     * Run for all lambdas and return best solution
-     *
-     * @param dataSet dataset to be solved
-     */
-    public Solution solve(DataSet dataSet) {
+    public ClarkeWrightMT(DataSet dataSet, double lambda) {
+        this.dataSet = dataSet;
+        this.lambda = lambda;
+    }
 
+    public ClarkeWrightMT(DataSet dataSet, double lambda, int scenario) {
+        this.dataSet = dataSet;
+        this.lambda = lambda;
+        this.scenario = scenario;
+    }
+
+    public ClarkeWrightMT(DataSet dataSet, double lambda, int scenario, Solution solutionClustering) {
+        this.dataSet = dataSet;
+        this.lambda = lambda;
+        this.scenario = scenario;
+        this.solutionClustering = solutionClustering;
+    }
+
+    public Solution call() {
         // Get some data from dataset
+        n = dataSet.getNumberOfCustomers() + 1;
+        Q = dataSet.getVehicleCapacity();
+        c = dataSet.getTravelCosts();
+        customers = dataSet.getCustomers();
         nrOfScenarios = dataSet.getNumberOfScenarios();
 
-        // Get largest demands
-        int highestDemand;
-        for (Customer c : dataSet.getCustomers()) {
-            highestDemand = 0;
-            // Get highest demand of all scenarios
-            for (int k = 0; k < nrOfScenarios; k++) {
-                if (c.getDemandPerScenario()[k] > highestDemand) {
-                    highestDemand = c.getDemandPerScenario()[k];
+        boolean sameRoute = false;
+
+        // Set correct demands
+        // When scenario is set
+        if (scenario > 0) {
+            for (Customer c : customers) {
+                c.setDemand(c.getDemandPerScenario()[scenario - 1]);
+            }
+        } else {
+            // Get largest demands
+            int highestDemand;
+            for (Customer c : dataSet.getCustomers()) {
+                highestDemand = 0;
+                // Get highest demand of all scenarios
+                for (int k = 0; k < nrOfScenarios; k++) {
+                    if (c.getDemandPerScenario()[k] > highestDemand) {
+                        highestDemand = c.getDemandPerScenario()[k];
+                    }
                 }
-            }
-            c.setDemand(highestDemand);
-        }
-
-        Solution solution = new Solution();
-        solution.setName("Clarke-Wright heuristic2");
-
-        Long start = System.currentTimeMillis();
-
-        RouteSet bestRouteSet = new RouteSet();
-        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
-
-        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-//        double[] lambdas = new double[]{0.4, 1.0};
-
-        for (double lambda : lambdas) {
-            Solution sol = solve(dataSet, lambda);
-            RouteSet rs = sol.getRoutes()[0];
-            if (rs.getRouteLength() < bestRouteSet.getRouteLength()) {
-                bestRouteSet = rs.getCopy();
+                c.setDemand(highestDemand);
             }
         }
 
-
-        Long end = System.currentTimeMillis();
-        solution.setRunTime((end - start) / 1000.0);
-        solution.setObjectiveValue(bestRouteSet.getRouteLength());
-        RouteSet[] scenarioRoutes = new RouteSet[nrOfScenarios];
-        for (int i = 0; i < nrOfScenarios; i++) {
-            scenarioRoutes[i] = bestRouteSet;
-        }
-        solution.setRoutes(scenarioRoutes);
-
-        return solution;
-    }
-
-    /**
-     * Solve VRP for this dataset for scenario with all largest demands
-     *
-     * @param dataSet dataset to be solved
-     */
-    public Solution solve(DataSet dataSet, double lambda) {
-
-        this.lambda = lambda;
-
-        // Get some data from dataset
-        n = dataSet.getNumberOfCustomers() + 1;
-        nrOfScenarios = dataSet.getNumberOfScenarios();
-        Q = dataSet.getVehicleCapacity();
-        c = dataSet.getTravelCosts();
-        customers = dataSet.getCustomers();
-
-        // Get largest demands
-        int highestDemand;
-        for (Customer c : customers) {
-            highestDemand = 0;
-            // Get highest demand of all scenarios
-            for (int k = 0; k < nrOfScenarios; k++) {
-                if (c.getDemandPerScenario()[k] > highestDemand) {
-                    highestDemand = c.getDemandPerScenario()[k];
-                }
-            }
-            c.setDemand(highestDemand);
-        }
-
-        return solve(false);
-    }
-
-    /**
-     * Solve a VRP with Clarke-Wright for a certain scenario
-     *
-     * @param dataSet  dataset to be solved
-     * @param scenario scenario number (starting with 1)
-     * @return solution to the problem
-     */
-    public Solution solve(DataSet dataSet, double lambda, int scenario) {
-
-        this.lambda = lambda;
-
-        // Get some data from dataset
-        n = dataSet.getNumberOfCustomers() + 1;
-        Q = dataSet.getVehicleCapacity();
-        c = dataSet.getTravelCosts();
-        customers = dataSet.getCustomers();
-
-        // Get demands
-        for (Customer c : customers) {
-            c.setDemand(c.getDemandPerScenario()[scenario - 1]);
-        }
-
-        return solve(false);
-    }
-
-    public Solution solve(DataSet dataSet, double lambda, Solution solutionClustering) {
-        this.lambda = lambda;
-
-        // Get some data from dataset
-        n = dataSet.getNumberOfCustomers() + 1;
-        nrOfScenarios = dataSet.getNumberOfScenarios();
-        Q = dataSet.getVehicleCapacity();
-        c = dataSet.getTravelCosts();
-        customers = dataSet.getCustomers();
-
-        Solution solution = new Solution();
-        solution.setName("Clarke-Wright with pre-clustering");
-        solution.setRoutes(new RouteSet[nrOfScenarios]);
-
-        Long start = System.currentTimeMillis();
-
-        double[][] assignments = solutionClustering.getzSol();
-        double[][][] skips = solutionClustering.getzSolSkip();
-
-        double costs = 0.0;
-
-        for (int scenario = 0; scenario < nrOfScenarios; scenario++) {
+        if (solutionClustering != null) {
+            sameRoute = true;
+            double[][] assignments = solutionClustering.getzSol();
+            double[][][] skips = solutionClustering.getzSolSkip();
             // Set demands
             for (Customer c : customers) {
                 c.setDemand(c.getDemandPerScenario()[scenario]);
@@ -169,71 +92,9 @@ public class ClarkeWright implements Solver {
                     }
                 }
             }
-            solution.getRoutes()[scenario] = solve(true).getRoutes()[scenario].getCopy();
-            costs += solution.getRoutes()[scenario].getRouteLength() * dataSet.getScenarioProbabilities()[scenario];
         }
 
-        Long end = System.currentTimeMillis();
-        solution.setRunTime((end - start) / 1000.0);
-        solution.setObjectiveValue(costs);
-
-        return solution;
-    }
-
-    public Solution solve(DataSet dataSet, Solution solutionClustering) {
-
-        // Get some data from dataset
-        n = dataSet.getNumberOfCustomers() + 1;
-        nrOfScenarios = dataSet.getNumberOfScenarios();
-        Q = dataSet.getVehicleCapacity();
-        c = dataSet.getTravelCosts();
-        customers = dataSet.getCustomers();
-
-        Solution solution = new Solution();
-        solution.setName("Clarke-Wright with pre-clustering");
-        solution.setRoutes(new RouteSet[nrOfScenarios]);
-
-        Long start = System.currentTimeMillis();
-
-        double[][] assignments = solutionClustering.getzSol();
-        double[][][] skips = solutionClustering.getzSolSkip();
-
-        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-        double record = Double.POSITIVE_INFINITY;
-        for (double lambda : lambdas) {
-            this.lambda = lambda;
-            double costs = 0.0;
-            RouteSet[] routeSets = new RouteSet[nrOfScenarios];
-            for (int scenario = 0; scenario < nrOfScenarios; scenario++) {
-                // Set demands
-                for (Customer c : customers) {
-                    c.setDemand(c.getDemandPerScenario()[scenario]);
-                    c.setAssignedRoute(0);
-                }
-                // Assign all routes
-                for (int i = 0; i < assignments.length; i++) {
-                    for (int j = 0; j < assignments[i].length; j++) {
-                        if (skips[i][j][scenario] == 1) {
-                            customers[i].setAssignedRoute(j);
-                        }
-                    }
-                }
-                routeSets[scenario] = solve(true).getRoutes()[scenario].getCopy();
-                costs += routeSets[scenario].getRouteLength() * dataSet.getScenarioProbabilities()[scenario];
-            }
-//            System.out.println("Lambda: " + lambda + ", value: " + costs);
-            if (costs < record) {
-                solution.setRoutes(routeSets);
-                solution.setObjectiveValue(costs);
-                record = costs;
-            }
-        }
-
-        Long end = System.currentTimeMillis();
-        solution.setRunTime((end - start) / 1000.0);
-        solution.setObjectiveValue(record);
-
-        return solution;
+        return solve(sameRoute);
     }
 
     /**

@@ -306,6 +306,46 @@ public class Frame extends JFrame implements ChangeListener {
             mapLabel.setIcon(icon);
             mainPanel.repaint();
         }
+
+        if (solution.getzSolSkip() != null) {
+            // Create image
+            routesImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = routesImg.createGraphics();
+            g2d.setColor(Color.red);
+
+            double[][] z = solution.getzSol();
+            double[][][] zSkip = solution.getzSolSkip();
+
+            int n = dataSet.getNumberOfCustomers() + 1;
+            int nrScenarios = dataSet.getNumberOfScenarios();
+
+            Customer[] customers = dataSet.getCustomers();
+
+            int x1, y1;
+
+            // Add lines on driven routesImg
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                        if (z[i][j] == 1 && zSkip[i][j][scenario] == 0) {
+                            x1 = transformX(customers[i].getxCoordinate());
+                            y1 = transformY(customers[i].getyCoordinate());
+                            g2d.drawString("" + customers[i].getId(), x1 + 6, y1 + 6);
+                            System.out.println("Customer " + customers[i].getId() + " skipped");
+                        }
+                }
+            }
+
+            // Repaint the map on screen with assignments and routes
+            // First combine map, assignments and routes, than repaint
+            BufferedImage combined = new BufferedImage((int) imgDim.getWidth(), (int) imgDim.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics g = combined.getGraphics();
+            g.drawImage(mapImg, 0, 0, null);
+            g.drawImage(assignmentsImg, 0, 0, null);
+            g.drawImage(routesImg, 0, 0, null);
+            ImageIcon icon = new ImageIcon(combined);
+            mapLabel.setIcon(icon);
+            mainPanel.repaint();
+        }
     }
 
     /**

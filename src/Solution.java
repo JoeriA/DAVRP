@@ -7,6 +7,16 @@ public class Solution {
     private double[][] aSol;
     private double[][][][] xSol;
     private double[][] zSol;
+
+    public double[][][] getzSolSkip() {
+        return zSolSkip;
+    }
+
+    public void setzSolSkip(double[][][] zSolSkip) {
+        this.zSolSkip = zSolSkip;
+    }
+
+    private double[][][] zSolSkip;
     private double objectiveValue, runTime, gap;
     private String name;
     private RouteSet[] routes;

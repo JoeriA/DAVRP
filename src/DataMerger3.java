@@ -9,7 +9,7 @@ import java.util.Locale;
 public class DataMerger3 {
 
     private static String[][] instanceData;
-    private static String[] solverNames = {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4"};
+    private static String[] solverNames = new String[] {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4", "RTR_DAVRP_2"};
     private static double[][] solutionData;
     private static double[][] runTimeData;
 
@@ -61,6 +61,7 @@ public class DataMerger3 {
         calculateBestValues();
         writeToFile();
         writeToLatex();
+        solverNames = new String[] {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4"};
         writeComparisonH1();
         writeComparisonH2();
         writeComparisonH3();
@@ -344,7 +345,7 @@ public class DataMerger3 {
 
             // Title
             line += "Instance\t# Customers\t# Scenarios\tAlpha\tBest";
-            for (int solver = 1; solver < solverNames.length; solver++) {
+            for (int solver = 0; solver < solverNames.length; solver++) {
                 line += "\t" + solverNames[solver];
             }
             line += "\r\n";
@@ -399,11 +400,7 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{ThreePartTable}\r\n\\begin{TableNotes}";
-            for (int j = 0; j < solverNames.length; j++) {
-                line += "\r\n\\item [" + (j + 1) + "] " + solverNames[j] + ".";
-            }
-            line += "\r\n\\end{TableNotes}\r\n\\begin{longtable}{rrrrr";
+            line += "\\begin{longtable}{rrrrr";
             for (String ignored : solverNames) {
                 line += "r";
             }
@@ -445,14 +442,11 @@ public class DataMerger3 {
                 line += " & " + round(runtimes[solver]);
             }
 
-            line += "\\\\\r\n\\end{longtable}\r\n\\end{ThreePartTable}";
+            line += "\\\\\r\n\\end{longtable}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
-            line = line.replace("Exact method (CPLEX).", "Exact algorithm from \\citet{Spliet2013}.");
-            line = line.replace("H1.", "Heuristic with exact routing from \\citet{Spliet2013}.");
-            line = line.replace("H2.", "Heuristic with approximate routing from \\citet{Spliet2013}.");
-            line = line.replace("RTR\\_DAVRP\\_H4.", "Record-to-record DAVRP algorithm.");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
             out.write(line);
 
             // Close the output stream

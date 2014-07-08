@@ -1,15 +1,13 @@
-import gurobi.GRBException;
-import ilog.concert.IloException;
-
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
  * Now with second 2-opt
  */
-public class RecordToRecordDAVRPTest implements Solver {
+public class RecordToRecordH3MT implements Callable<Solution> {
 
     double epsilon = Math.pow(10.0, -10.0);
     private double record;
@@ -17,57 +15,29 @@ public class RecordToRecordDAVRPTest implements Solver {
     private int D;
     private int K;
     private int P;
-    private int NBListSize;
     private double[][] c;
     private int Q;
-    private double beta;
     private RouteSet routeSet;
+    private DataSet dataSet;
+    private int scenario;
+    private double lambda;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordDAVRPTest() {
-        // Parameters
-        K = 5;
-        D = 30;
-        P = 2;
-        NBListSize = 40;
-        beta = 0.6;
-    }
-
-    /**
-     * Implementation of record-to-record heuristic for the DAVRP
-     */
-    public RecordToRecordDAVRPTest(int D, int K, int P, int NBListSize, double beta) {
+    public RecordToRecordH3MT(DataSet dataSet, double lambda, int D, int K, int P) {
         // Parameters
         this.D = D;
         this.K = K;
         this.P = P;
-        this.NBListSize = NBListSize;
-        this.beta = beta;
+        this.dataSet = dataSet;
+        this.lambda = lambda;
     }
 
-    /**
-     * Solve VRP for this data set
-     *
-     * @param dataSet data set to be solved
-     */
-    public Solution solve(DataSet dataSet) throws GRBException, IloException {
-
-        return solve(dataSet, 0);
-    }
-
-    /**
-     * Solve VRP for this scenario
-     *
-     * @param dataSet  data set to be solved
-     * @param scenario number of scenario (starts with 1)
-     * @return solution to the data set
-     */
-    public Solution solve(DataSet dataSet, int scenario) throws GRBException, IloException {
+    public Solution call() {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record_c");
+        solution.setName("Record2Record_H3");
 
         // Get some data from data set
         int n = dataSet.getNumberOfCustomers() + 1;
@@ -80,146 +50,91 @@ public class RecordToRecordDAVRPTest implements Solver {
 
         Long start = System.currentTimeMillis();
 
-        // Create neighbor lists
-        for (Customer customer : routeSet.getCustomers()) {
-            if (customer.getId() != 0) {
-                ArrayList<Neighbor> neighborList = new ArrayList<Neighbor>(n - 2);
-                for (Customer neighbor : routeSet.getCustomers()) {
-                    if (neighbor.getId() != 0 && neighbor.getId() != customer.getId()) {
-                        neighborList.add(new Neighbor(customer.getId(), neighbor.getId(), c));
+            Solution cwSolution;
+            ClarkeWrightMT cw;
+            if (scenario == 0) {
+                cw = new ClarkeWrightMT(dataSet, lambda);
+                cwSolution = cw.call();
+                routeSet = cwSolution.getRoutes()[0].getCopy();
+            } else {
+                cw = new ClarkeWrightMT(dataSet, lambda, scenario);
+                cwSolution = cw.call();
+                routeSet = cwSolution.getRoutes()[scenario - 1].getCopy();
+            }
+            record = cwSolution.getObjectiveValue();
+            routeSet.setRouteLength(record);
+            deviation = 0.01 * record;
+            RouteSet recordSet = routeSet.getCopy();
+
+            int p = 0;
+            int k = 0;
+            while (p < P) {
+//                System.out.println("p: " + p);
+//                System.out.println("k: " + k);
+                // Start improvement iterations
+                for (int d = 0; d < D; d++) {
+                    // Moves with record to record
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            findOnePointMove(i, true);
+                            findTwoPointMove(i, true);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                        }
                     }
                 }
-                Collections.sort(neighborList);
-                int neighborListLength = Math.min(NBListSize - 1, n - 3);
-                while (neighborList.size() > neighborListLength) {
-                    neighborList.remove(0);
-                }
-                double criticalValue = neighborList.get(0).getDistance() * beta;
-                while (neighborList.get(0).getDistance() > criticalValue) {
-                    neighborList.remove(0);
-                }
-                Collections.sort(neighborList, Neighbor.neighborAscending);
-                Collections.sort(neighborList, Neighbor.distanceAscending);
-                customer.setNeighbors(neighborList);
-            }
-        }
-
-        SolverClustering sc = new SolverClustering();
-        Solution clusters = sc.solve(dataSet);
-
-        ClarkeWright cw = new ClarkeWright();
-
-        Solution basisSolution = cw.solve(dataSet, 1.0, clusters);
-        assignRoutes(basisSolution.getRoutes(),clusters.getzSol());
-        return basisSolution;
-
-//        RouteSet bestRouteSet = new RouteSet();
-//        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
-//
-//        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-////        double[] lambdas = new double[]{0.6, 1.4, 1.6,};
-//
-//        for (double lambda : lambdas) {
-////            System.out.println("lambda: " + lambda);
-//            Solution cwSolution;
-//            if (scenario == 0) {
-//                cwSolution = cw.solve(dataSet, lambda);
-//                routeSet = cwSolution.getRoutes()[0];
-//            } else {
-//                cwSolution = cw.solve(dataSet, lambda, scenario);
-//                routeSet = cwSolution.getRoutes()[scenario - 1];
-//            }
-//            record = cwSolution.getObjectiveValue();
-//            routeSet.setRouteLength(record);
-//            deviation = 0.01 * record;
-//            RouteSet recordSet = routeSet.getCopy();
-//
-//            int p = 0;
-//            int k = 0;
-//            while (p < P) {
-////                System.out.println("p: " + p);
-////                System.out.println("k: " + k);
-//                // Start improvement iterations
-//                for (int d = 0; d < D; d++) {
-//                    // Moves with record to record
-//                    for (Customer i : routeSet.getCustomers()) {
-//                        if (i.getId() != 0) {
-//                            findOnePointMove(i, true);
-//                            findTwoPointMove(i, true);
-//                            Route r = routeSet.getRoutes()[i.getRoute()];
-//                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
-//                        }
-//                    }
-//                }
-//                // Downhill moves
-//                boolean moveMade;
-//                do {
-//                    moveMade = false;
-//                    for (Customer i : routeSet.getCustomers()) {
-//                        if (i.getId() != 0) {
-//                            boolean onePoint = findOnePointMove(i, false);
-//                            boolean twoPoint = findTwoPointMove(i, false);
-//                            Route r = routeSet.getRoutes()[i.getRoute()];
-//                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-//                            if (onePoint || twoPoint || twoOpt) {
-//                                moveMade = true;
-//                            }
-//                        }
-//                    }
-//                } while (moveMade);
-//                // Update record when necessary
-//                if (routeSet.getRouteLength() < record - epsilon) {
-//                    record = routeSet.getRouteLength();
-//                    deviation = 0.01 * record;
-//                    recordSet = routeSet.getCopy();
-//                    k = 0;
-////                    System.out.println("record: " + record);
-//                }
-//                k++;
-//                if (k >= K) {
-//                    perturb();
-//                    p++;
-//                    k = 0;
-//                }
-//            }
-//            if (record < bestRouteSet.getRouteLength()) {
-//                bestRouteSet = recordSet;
-//            }
-////            System.out.println("Lambda: " + lambda + ", value: " + globalSolution.getRouteLength());
-//        }
-//        Long end = System.currentTimeMillis();
-//        solution.setRunTime((end - start) / 1000.0);
-//        solution.setObjectiveValue(bestRouteSet.getRouteLength());
-//        solution.setAssignments(bestRouteSet.assignments());
-//        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
-//        if (scenario == 0) {
-//            for (int i = 0; i < sol.length; i++) {
-//                sol[i] = bestRouteSet;
-//            }
-//        } else {
-//            sol[scenario - 1] = bestRouteSet;
-//        }
-//        solution.setRoutes(sol);
-//
-//        SolutionChecker checker = new SolutionChecker();
-//        if (!checker.checkRoutes(solution, dataSet)) {
-//            System.out.println("Solution is not feasible");
-//            throw new IllegalStateException("Solution is not feasible");
-//        }
-//
-//        return solution;
-    }
-
-    private void assignRoutes(RouteSet[] routeSets, double[][] zSol) {
-        for (RouteSet routeSet : routeSets) {
-            for (int i = 1; i < zSol.length; i++) {
-                for (int j = 1; j < zSol[i].length; j++) {
-                    if (zSol[i][j] == 1) {
-                        routeSet.getRoutes()[j].addAssignedCustomer(routeSet.getCustomers()[i]);
+                // Downhill moves
+                boolean moveMade;
+                do {
+                    moveMade = false;
+                    for (Customer i : routeSet.getCustomers()) {
+                        if (i.getId() != 0) {
+                            boolean onePoint = findOnePointMove(i, false);
+                            boolean twoPoint = findTwoPointMove(i, false);
+                            Route r = routeSet.getRoutes()[i.getRoute()];
+                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                            if (onePoint || twoPoint || twoOpt) {
+                                moveMade = true;
+                            }
+                        }
                     }
+                } while (moveMade);
+                // Update record when necessary
+                if (routeSet.getRouteLength() < record - epsilon) {
+                    record = routeSet.getRouteLength();
+                    deviation = 0.01 * record;
+                    recordSet = routeSet.getCopy();
+                    k = 0;
+//                    System.out.println("record: " + record);
+                }
+                k++;
+                if (k >= K) {
+                    perturb();
+                    p++;
+                    k = 0;
                 }
             }
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(recordSet.getRouteLength());
+        solution.setAssignments(recordSet.assignments());
+        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
+        if (scenario == 0) {
+            for (int i = 0; i < sol.length; i++) {
+                sol[i] = recordSet;
+            }
+        } else {
+            sol[scenario - 1] = recordSet;
         }
+        solution.setRoutes(sol);
+
+        SolutionChecker checker = new SolutionChecker();
+        if (!checker.checkRoutes(solution, dataSet)) {
+            System.out.println("Solution is not feasible");
+            throw new IllegalStateException("Solution is not feasible");
+        }
+
+        return solution;
     }
 
     /**

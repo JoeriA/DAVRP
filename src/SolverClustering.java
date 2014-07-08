@@ -10,6 +10,9 @@ import ilog.cplex.IloCplex;
 
 public class SolverClustering implements Solver {
 
+    private double beta = 7.1;
+//    private double beta = 0.0;
+
     /**
      * Create the solver clustering
      */
@@ -44,18 +47,18 @@ public class SolverClustering implements Solver {
 
         // Create variables
         IloNumVar[] y = new IloNumVar[n];
-        for (int j = 0; j < n; j++) {
+        for (int j = 1; j < n; j++) {
             y[j] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "y" + j);
         }
         IloNumVar[][] z = new IloNumVar[n][n];
         for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 z[i][j] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "z" + i + "_" + j);
             }
         }
         IloNumVar[][][] z2 = new IloNumVar[n][n][o];
         for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 for (int k = 0; k < o; k++) {
                     z2[i][j][k] = model.numVar(0.0, 1.0, IloNumVarType.Bool, "z" + i + "_" + j + "^" + o);
                 }
@@ -64,8 +67,8 @@ public class SolverClustering implements Solver {
 
         // Set objective
         IloLinearNumExpr expr = model.linearNumExpr();
-        for (int j = 0; j < n; j++) {
-            expr.addTerm(2.0 * c[0][j], y[j]);
+        for (int j = 1; j < n; j++) {
+            expr.addTerm(2.0 * (c[0][j] + beta), y[j]);
             for (int i = 1; i < n; i++) {
                 for (int omega = 0; omega < o; omega++) {
                     expr.addTerm(2.0 * p[omega] * c[i][j], z2[i][j][omega]);
@@ -81,14 +84,14 @@ public class SolverClustering implements Solver {
         // 2
         for (int i = 1; i < n; i++) {
             expr = model.linearNumExpr();
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 expr.addTerm(1.0, z[i][j]);
             }
             model.addEq(expr, 1.0, "c2" + i);
         }
         // 3
         for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 expr = model.linearNumExpr();
                 expr.addTerm(1.0, z[i][j]);
                 expr.addTerm(-1.0, y[j]);
@@ -97,7 +100,7 @@ public class SolverClustering implements Solver {
         }
         // 4
         for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 for (int k = 0; k < o; k++) {
                     expr = model.linearNumExpr();
                     expr.addTerm(1.0, z2[i][j][k]);
@@ -107,7 +110,7 @@ public class SolverClustering implements Solver {
             }
         }
         // 5
-        for (int j = 0; j < n; j++) {
+        for (int j = 1; j < n; j++) {
             for (int k = 0; k < o; k++) {
                 expr = model.linearNumExpr();
                 for (int i = 1; i < n; i++) {
@@ -130,6 +133,8 @@ public class SolverClustering implements Solver {
         }
 
         // Optimize model
+        model.setParam(IloCplex.DoubleParam.TiLim, 60.0);
+        model.setParam(IloCplex.DoubleParam.EpGap, 0.05);
         model.setOut(null);
         Long start = System.currentTimeMillis();
         model.solve();
@@ -139,12 +144,22 @@ public class SolverClustering implements Solver {
         solution.setGap(model.getMIPRelativeGap());
         double[][] zSol = new double[n][n];
         for (int i = 1; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+            for (int j = 1; j < n; j++) {
                 zSol[i][j] = model.getValue(z[i][j]);
             }
         }
-
         solution.setzSol(zSol);
+
+        double[][][] skip = new double[n][n][o];
+        for (int i = 1; i < n; i++) {
+            for (int j = 1; j < n; j++) {
+                for (int omega = 0; omega < o; omega++) {
+                    skip[i][j][omega] = model.getValue(z2[i][j][omega]);
+                }
+
+            }
+        }
+        solution.setzSolSkip(skip);
 
         model.clearModel();
 

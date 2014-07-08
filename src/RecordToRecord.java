@@ -81,13 +81,12 @@ public class RecordToRecord implements Solver {
         Route r;
 
         for (double lambda = 0.6; lambda <= 2.0; lambda += 0.2) {
-            cw.setLambda(lambda);
             Solution cwSolution;
             if (scenario == 0) {
-                cwSolution = cw.solve(dataSet);
+                cwSolution = cw.solve(dataSet, lambda);
                 routeSet = cwSolution.getRoutes()[0];
             } else {
-                cwSolution = cw.solve(dataSet, scenario);
+                cwSolution = cw.solve(dataSet, lambda, scenario);
                 routeSet = cwSolution.getRoutes()[scenario - 1];
             }
             record = cwSolution.getObjectiveValue();
