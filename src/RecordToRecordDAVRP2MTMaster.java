@@ -1,43 +1,35 @@
+import gurobi.GRBException;
+import ilog.concert.IloException;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
- * Now with second 2-opt
+ * RTR DAVRP with clustering
  */
-public class RecordToRecordH3MTMaster implements Solver {
+public class RecordToRecordDAVRP2MTMaster implements Solver {
 
-    double epsilon = Math.pow(10.0, -10.0);
-    private int D;
-    private int K;
-    private int P;
+    private int K2;
+    private int D2;
     private int NBListSize;
     private double beta;
+    private int n;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH3MTMaster() {
+    public RecordToRecordDAVRP2MTMaster() {
         // Parameters
-        K = 5;
-        D = 30;
-        P = 2;
+        K2 = 5;
+        D2 = 5;
         NBListSize = 40;
         beta = 0.6;
-    }
-
-    /**
-     * Implementation of record-to-record heuristic for the DAVRP
-     */
-    public RecordToRecordH3MTMaster(int D, int K, int P, int NBListSize, double beta) {
-        // Parameters
-        this.D = D;
-        this.K = K;
-        this.P = P;
-        this.NBListSize = NBListSize;
-        this.beta = beta;
     }
 
     /**
@@ -45,32 +37,20 @@ public class RecordToRecordH3MTMaster implements Solver {
      *
      * @param dataSet data set to be solved
      */
-    public Solution solve(DataSet dataSet) {
-
-        return solve(dataSet, 0);
-    }
-
-    /**
-     * Solve VRP for this scenario
-     *
-     * @param dataSet  data set to be solved
-     * @param scenario number of scenario (starts with 1)
-     * @return solution to the data set
-     */
-    public Solution solve(DataSet dataSet, int scenario) {
+    public Solution solve(DataSet dataSet) throws GRBException, IloException {
 
         Solution solution = new Solution();
-        solution.setName("Record2Record_H3_MT");
+        solution.setName("RTR_DAVRP_2_MT");
 
         // Get some data from data set
-        int n = dataSet.getNumberOfCustomers() + 1;
+        n = dataSet.getNumberOfCustomers() + 1;
+        int o = dataSet.getNumberOfScenarios();
         double[][] c = dataSet.getTravelCosts();
-//        P = (int) Math.max((n - 1) / 2.0, 30);
+
+        Long start = System.currentTimeMillis();
 
         RouteSet routeSet = new RouteSet();
         routeSet.setCustomers(dataSet.getCustomers());
-
-        Long start = System.currentTimeMillis();
 
         // Create neighbor lists
         for (Customer customer : routeSet.getCustomers()) {
@@ -96,25 +76,36 @@ public class RecordToRecordH3MTMaster implements Solver {
             }
         }
 
-        RouteSet bestRouteSet = new RouteSet();
-        bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
+        // Obtain clustering results
+        SolverClustering sc = new SolverClustering();
+        Solution clusters = sc.solve(dataSet);
 
-//        double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-        double[] lambdas = new double[]{0.6, 1.0, 1.4};
-
-        ExecutorService pool = Executors.newFixedThreadPool(4);
-        Future[] futures = new Future[lambdas.length];
-
-        for (int i = 0; i < lambdas.length; i++) {
-            futures[i] = pool.submit(new RecordToRecordH3MT(dataSet.getCopy(), lambdas[i], D, K, P));
+        if (clusters.getGap() > 0.5) {
+            return null;
         }
 
-        for (Future future : futures) {
+        // Create routes with clusters
+        ClarkeWright cw = new ClarkeWright();
+        Solution basisSolution = cw.solve(dataSet, clusters);
+        assignRoutes(basisSolution, clusters.getzSol());
+        solution.setAssignments(basisSolution.getAssignments());
+
+        // Create place to store intermediate solutions
+        RouteSet[] solutions = new RouteSet[o];
+        double objectiveValue = 0.0;
+
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        Future[] futures = new Future[o];
+
+        for (int scenario = 0; scenario < o; scenario++) {
+            futures[scenario] = pool.submit(new RecordToRecordDAVRPH4MT(dataSet.getCopy(), basisSolution.getRoutes()[scenario], scenario, K2, D2));
+        }
+
+        for (int scenario = 0; scenario < o; scenario++) {
             try {
-                Solution temp = (Solution) future.get();
-                if (temp.getRoutes()[0].getRouteLength() < bestRouteSet.getRouteLength()) {
-                    bestRouteSet = temp.getRoutes()[0];
-                }
+                RouteSet temp = (RouteSet) futures[scenario].get();
+                solutions[scenario] = temp;
+                objectiveValue += temp.getRouteLength() * dataSet.getScenarioProbabilities()[scenario];
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -124,17 +115,8 @@ public class RecordToRecordH3MTMaster implements Solver {
         pool.shutdown();
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
-        solution.setObjectiveValue(bestRouteSet.getRouteLength());
-        solution.setAssignments(bestRouteSet.assignments());
-        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
-        if (scenario == 0) {
-            for (int i = 0; i < sol.length; i++) {
-                sol[i] = bestRouteSet;
-            }
-        } else {
-            sol[scenario - 1] = bestRouteSet;
-        }
-        solution.setRoutes(sol);
+        solution.setRoutes(solutions);
+        solution.setObjectiveValue(objectiveValue);
 
         SolutionChecker checker = new SolutionChecker();
         if (!checker.checkRoutes(solution, dataSet)) {
@@ -143,6 +125,22 @@ public class RecordToRecordH3MTMaster implements Solver {
         }
 
         return solution;
+    }
+
+    private void assignRoutes(Solution solution, double[][] zSol) {
+        int[] assignments = new int[n];
+        RouteSet[] routeSets = solution.getRoutes();
+        for (RouteSet routeSet : routeSets) {
+            for (int i = 1; i < zSol.length; i++) {
+                for (int j = 1; j < zSol[i].length; j++) {
+                    if (zSol[i][j] == 1) {
+                        routeSet.getRoutes()[j].addAssignedCustomer(routeSet.getCustomers()[i]);
+                        assignments[i] = j;
+                    }
+                }
+            }
+        }
+        solution.setAssignments(assignments);
     }
 
 }

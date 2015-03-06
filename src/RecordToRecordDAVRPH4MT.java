@@ -35,68 +35,129 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
 
     /**
      * Solve VRP for this data set
-     *
      */
     public RouteSet call() {
 
-            // Set demands of this scenario
-            for (Customer customer : routeSet.getCustomers()) {
-                customer.setDemand(customer.getDemandPerScenario()[scenario]);
+        // Set demands of this scenario
+        for (Customer customer : routeSet.getCustomers()) {
+            customer.setDemand(customer.getDemandPerScenario()[scenario]);
+        }
+        for (Route route : routeSet.getRoutes()) {
+            if (route != null) {
+                route.recalculateWeight();
             }
-            for (Route route : routeSet.getRoutes()) {
-                if (route != null) {
-                    route.recalculateWeight();
-                }
+        }
+
+        // Insert skipped customers in better location
+        for (Customer customer : routeSet.getCustomers()) {
+            if (customer.getId() != 0 && customer.getAssignedRoute() != customer.getRoute()) {
+                double saving = applyBestInsertion(customer);
+                routeSet.setRouteLength(routeSet.getRouteLength() - saving);
             }
+        }
+        // Remove empty routes
+        for (int i = 0; i < routeSet.getRoutes().length; i++) {
+            if (routeSet.getRoutes()[i] != null && routeSet.getRoutes()[i].getEdges().size() == 0) {
+                routeSet.getRoutes()[i] = null;
+            }
+        }
 
-            record = routeSet.getRouteLength();
-            deviation = 0.01 * record;
-            RouteSet recordSet = routeSet.getCopy();
+        record = routeSet.getRouteLength();
+        deviation = 0.01 * record;
+        RouteSet recordSet = routeSet.getCopy();
 
-            int k = 0;
-            while (k < K2) {
+        int k = 0;
+        while (k < K2) {
 //                System.out.println("p: " + p);
 //                System.out.println("k: " + k);
-                // Start improvement iterations
-                for (int d = 0; d < D2; d++) {
-                    // Moves with record to record
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            findOnePointMove(i, true);
-                            findTwoPointMove(i, true);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
-                        }
+            // Start improvement iterations
+            for (int d = 0; d < D2; d++) {
+                // Moves with record to record
+                for (Customer i : routeSet.getCustomers()) {
+                    if (i.getId() != 0) {
+                        findOnePointMove(i, true);
+                        findTwoPointMove(i, true);
+                        Route r = routeSet.getRoutes()[i.getRoute()];
+                        findTwoOptMoveNew(r.getEdgeFrom(i), true);
                     }
                 }
-                // Downhill moves
-                boolean moveMade;
-                do {
-                    moveMade = false;
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            boolean onePoint = findOnePointMove(i, false);
-                            boolean twoPoint = findTwoPointMove(i, false);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                            if (onePoint || twoPoint || twoOpt) {
-                                moveMade = true;
-                            }
-                        }
-                    }
-                } while (moveMade);
-                // Update record when necessary
-                if (routeSet.getRouteLength() < record - epsilon) {
-                    record = routeSet.getRouteLength();
-                    deviation = 0.01 * record;
-                    recordSet = routeSet.getCopy();
-                    k = 0;
-//                    System.out.println("record: " + record);
-                }
-                k++;
             }
+            // Downhill moves
+            boolean moveMade;
+            do {
+                moveMade = false;
+                for (Customer i : routeSet.getCustomers()) {
+                    if (i.getId() != 0) {
+                        boolean onePoint = findOnePointMove(i, false);
+                        boolean twoPoint = findTwoPointMove(i, false);
+                        Route r = routeSet.getRoutes()[i.getRoute()];
+                        boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                        if (onePoint || twoPoint || twoOpt) {
+                            moveMade = true;
+                        }
+                    }
+                }
+            } while (moveMade);
+            // Update record when necessary
+            if (routeSet.getRouteLength() < record - epsilon) {
+                record = routeSet.getRouteLength();
+                deviation = 0.01 * record;
+                recordSet = routeSet.getCopy();
+                k = 0;
+//                    System.out.println("record: " + record);
+            }
+            k++;
+        }
 
         return recordSet;
+    }
+
+    /**
+     * Apply cheapest insertion of a customer into any route
+     *
+     * @param customer customer to insert
+     * @return saving of inserting this customer into a route (negative costs)
+     */
+    private double applyBestInsertion(Customer customer) {
+
+        double totalSaving = 0.0;
+        // Remove customer from its route
+        Route r = routeSet.getRoutes()[customer.getRoute()];
+        Customer from = r.getEdgeTo(customer).getFrom();
+        Customer to = r.getEdgeFrom(customer).getTo();
+        totalSaving += r.getEdgeTo(customer).getDistance();
+        totalSaving += r.getEdgeFrom(customer).getDistance();
+        totalSaving -= c[from.getId()][to.getId()];
+        r.removeEdgeTo(customer);
+        r.removeEdgeFrom(customer);
+        r.addEdge(new Edge(from, to, c));
+
+        // Find cheapest insertion
+        double bestSaving = Double.NEGATIVE_INFINITY;
+        double saving;
+        Edge bestEdge = null;
+        // Iterate over all edges to find cheapest insertion
+        for (Route route : routeSet.getRoutes()) {
+            if (route != null) {
+                for (Edge e : route.getEdges()) {
+                    saving = 0.0;
+                    saving += e.getDistance();
+                    saving -= c[e.getFrom().getId()][customer.getId()];
+                    saving -= c[customer.getId()][e.getTo().getId()];
+                    if (saving > bestSaving && route.getWeight() + customer.getDemand() <= Q) {
+                        bestSaving = saving;
+                        bestEdge = e;
+                    }
+                }
+            }
+        }
+        // Perform cheapest insertion
+        assert bestEdge != null;
+        r = routeSet.getRoutes()[bestEdge.getRoute()];
+        r.removeEdge(bestEdge);
+        r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
+        r.addEdge(new Edge(customer, bestEdge.getTo(), c));
+        return totalSaving + bestSaving;
     }
 
     /**

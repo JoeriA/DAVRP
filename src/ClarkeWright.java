@@ -54,6 +54,7 @@ public class ClarkeWright implements Solver {
         bestRouteSet.setRouteLength(Double.POSITIVE_INFINITY);
 
         double[] lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
+//        double[] lambdas = new double[]{0.6, 1.0, 1.4};
 //        double[] lambdas = new double[]{0.4, 1.0};
 
         for (double lambda : lambdas) {

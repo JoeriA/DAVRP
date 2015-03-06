@@ -18,28 +18,25 @@ class DAVRP {
      */
     public static void main(String[] args) {
 
-
 //        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
 //        Solver solver = new SolverCplexLargest();
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
-//        Solver solver = new ClarkeWrightSequential();
-//        Solver solver = new ClarkeWright2();
 //        Solver solver = new RecordToRecordLowerBound();
 //        Solver solver = new RecordToRecordDAVRP();
 //        Solver solver = new RecordToRecordDAVRPImproved();
 //        Solver solver = new RecordToRecordH();
-//        Solver solver = new RecordToRecordH3MTMaster();
+        Solver solver = new RecordToRecordH3MTMaster();
 //        Solver solver = new RecordToRecordDAVRPH();
-        Solver solver = new RecordToRecordDAVRPH4MTMaster();
-//        Solver solver = new RecordToRecordDAVRP2();
+//        Solver solver = new RecordToRecordDAVRPH4MTMaster();
+//        Solver solver = new RecordToRecordDAVRP2MTMaster();
 
         int start = 1;
-        int end = 125;
+        int end = 0;
         boolean testCMT = false;
-        boolean testGolden = false;
+        boolean testGolden = true;
 
         boolean silent = true;
 
@@ -55,11 +52,13 @@ class DAVRP {
                         frame.createMap(dataSet);
                     }
                     Solution solution = solver.solve(dataSet);
-                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
-                    if (!silent) {
-                        frame.drawResults(solution);
+                    if (solution != null) {
+                        System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                        if (!silent) {
+                            frame.drawResults(solution);
+                        }
+                        writeToFile(instance, solution);
                     }
-                    writeToFile(instance, solution);
                 } catch (GRBException e) {
                     e.printStackTrace();
                 } catch (IloException e) {
@@ -77,11 +76,13 @@ class DAVRP {
                             frame.createMap(dataSet);
                         }
                         Solution solution = solver.solve(dataSet);
-                        System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
-                        if (!silent) {
-                            frame.drawResults(solution);
+                        if (solution != null) {
+                            System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                            if (!silent) {
+                                frame.drawResults(solution);
+                            }
+                            writeToFile(instance, solution);
                         }
-                        writeToFile(instance, solution);
                     } catch (GRBException e) {
                         e.printStackTrace();
                     } catch (IloException e) {
@@ -99,11 +100,13 @@ class DAVRP {
                         frame.createMap(dataSet);
                     }
                     Solution solution = solver.solve(dataSet);
-                    System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
-                    if (!silent) {
-                        frame.drawResults(solution);
+                    if (solution != null) {
+                        System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                        if (!silent) {
+                            frame.drawResults(solution);
+                        }
+                        writeToFile(instance, solution);
                     }
-                    writeToFile(instance, solution);
                 } catch (GRBException e) {
                     e.printStackTrace();
                 } catch (IloException e) {
@@ -118,13 +121,19 @@ class DAVRP {
                 String instance = "vrpnc" + i;
                 try {
                     System.out.println("Solving " + instance);
-                    DataReader dataReader = new DataReader();
+//                    Frame frame = new Frame();
                     DataSet dataSet = dataReaderCMT.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
                         System.out.println("Problem contains not implemented restrictions");
                         continue;
                     }
+                    if (!silent) {
+//                        frame.createMap(dataSet);
+                    }
                     Solution solution = solver.solve(dataSet);
+                    if (!silent) {
+//                        frame.drawResults(solution);
+                    }
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     writeToFile(instance, solution);
                 } catch (GRBException e) {
@@ -146,13 +155,19 @@ class DAVRP {
                 }
                 try {
                     System.out.println("Solving " + instance);
-                    DataReader dataReader = new DataReader();
+                    Frame frame = new Frame();
                     DataSet dataSet = dataReaderGolden.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
                         System.out.println("Problem contains not implemented restrictions");
                         continue;
                     }
+                    if (!silent) {
+                        frame.createMap(dataSet);
+                    }
                     Solution solution = solver.solve(dataSet);
+                    if (!silent) {
+//                        frame.drawResults(solution);
+                    }
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     writeToFile(instance, solution);
                 } catch (GRBException e) {

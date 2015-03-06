@@ -39,7 +39,12 @@ public class Frame extends JFrame implements ChangeListener {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int dimensionSize = Math.min((int) screenSize.getHeight() - 80, (int) screenSize.getWidth() - 10);
         imgDim = new Dimension(dimensionSize, dimensionSize);
+        // Dimension for Spliet
         mapDim = new Dimension(5, 5);
+        // Dimension for CMT
+//        mapDim = new Dimension(100, 100);
+        // Dimension for Kelly
+//        mapDim = new Dimension(50, 50);
 
         // Create graphics
         mapImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_RGB);
@@ -98,7 +103,7 @@ public class Frame extends JFrame implements ChangeListener {
             x = transformX(customers[i].getxCoordinate());
             y = transformY(customers[i].getyCoordinate());
             g2d.fillOval(x - (int) (size / 2.0), y - (int) (size / 2.0), size, size);
-            g2d.drawString("" + customers[i].getId(), x + size, y + size);
+//            g2d.drawString("" + customers[i].getId(), x + size, y + size);
         }
 
         // Print the mapImg on screen
@@ -355,7 +360,7 @@ public class Frame extends JFrame implements ChangeListener {
      * @return transformed x-coordinate
      */
     private int transformX(double x) {
-        // Make all coordinates positive
+        // Make all coordinates positive (turn off for CMT)
         x += mapDim.getWidth() / 2.0;
         // Scale coordinates to screensize
         x *= imgDim.getWidth() / mapDim.getWidth();
@@ -370,7 +375,7 @@ public class Frame extends JFrame implements ChangeListener {
      * @return transformed y-coordinate
      */
     private int transformY(double y) {
-        // Make all coordinates positive
+        // Make all coordinates positive (turn off for CMT)
         y += mapDim.getHeight() / 2.0;
         // Scale coordinates to screensize
         y *= imgDim.getHeight() / mapDim.getHeight();

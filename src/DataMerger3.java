@@ -9,7 +9,7 @@ import java.util.Locale;
 public class DataMerger3 {
 
     private static String[][] instanceData;
-    private static String[] solverNames = new String[] {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4", "RTR_DAVRP_2"};
+    private static String[] solverNames = new String[]{"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4_MT", "RTR_DAVRP_2_MT"};
     private static double[][] solutionData;
     private static double[][] runTimeData;
 
@@ -61,7 +61,8 @@ public class DataMerger3 {
         calculateBestValues();
         writeToFile();
         writeToLatex();
-        solverNames = new String[] {"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4"};
+        writeComparisonH();
+        solverNames = new String[]{"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4_MT"};
         writeComparisonH1();
         writeComparisonH2();
         writeComparisonH3();
@@ -97,6 +98,49 @@ public class DataMerger3 {
             gaps[0][solver] = gaps[0][solver] / gaps[1][solver];
         }
         return gaps[0];
+    }
+
+    private static int[] getNrWins(int start, int end) {
+        int[] nrWins = new int[solverNames.length + 1];
+        for (int instance = start; instance <= end; instance++) {
+            for (int solver = 1; solver < solverNames.length + 1; solver++) {
+                double epsilon = Math.pow(10.0, -5.0);
+                if (solutionData[instance][solver] <= solutionData[instance][0] + epsilon && solutionData[instance][solver] >= solutionData[instance][0] - epsilon) {
+                    nrWins[solver] += 1;
+                }
+            }
+        }
+        return nrWins;
+    }
+
+    private static double gapCombined(int start, int end) {
+        double gap2 = 0.0;
+        for (int instance = start; instance <= end; instance++) {
+            double epsilon = Math.pow(10.0, -5.0);
+            double best = solutionData[instance][solverNames.length - 1];
+            if (solutionData[instance][solverNames.length] > 0.0 && solutionData[instance][solverNames.length] < best) {
+                best = solutionData[instance][solverNames.length];
+            }
+            gap2 += (best - solutionData[instance][0]) / solutionData[instance][0] * 100.0;
+
+        }
+        return gap2 / (end + 1 - start);
+    }
+
+    private static int nrWinsCombined(int start, int end) {
+        int nrWins2 = 0;
+        for (int instance = start; instance <= end; instance++) {
+            double epsilon = Math.pow(10.0, -5.0);
+            double best = solutionData[instance][solverNames.length - 1];
+            if (solutionData[instance][solverNames.length] > 0.0 && solutionData[instance][solverNames.length] < best) {
+                best = solutionData[instance][solverNames.length];
+            }
+            if (best <= solutionData[instance][0] + epsilon && best >= solutionData[instance][0] - epsilon) {
+                nrWins2 += 1;
+            }
+
+        }
+        return nrWins2;
     }
 
     /**
@@ -345,8 +389,8 @@ public class DataMerger3 {
 
             // Title
             line += "Instance\t# Customers\t# Scenarios\tAlpha\tBest";
-            for (int solver = 0; solver < solverNames.length; solver++) {
-                line += "\t" + solverNames[solver];
+            for (String solverName : solverNames) {
+                line += "\t" + solverName;
             }
             line += "\r\n";
 
@@ -370,6 +414,12 @@ public class DataMerger3 {
             line += "Avg. gap (%)\t\t\t\t";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
                 line += "\t" + gaps[solver];
+            }
+            // Write number of best results
+            int[] wins = getNrWins(0, instanceData.length - 1);
+            line += "# best results\t\t\t\t";
+            for (int solver = 1; solver < solverNames.length + 1; solver++) {
+                line += "\t" + wins[solver];
             }
             line += "\r\n";
             // Write times
@@ -435,6 +485,13 @@ public class DataMerger3 {
                 line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
+            // Write number of best results
+            int[] wins = getNrWins(0, instanceData.length - 1);
+            line += "\\multicolumn{4}{l}{\\# of best results} & ";
+            for (int solver = 1; solver < solverNames.length + 1; solver++) {
+                line += " & " + wins[solver];
+            }
+            line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, instanceData.length - 1);
             line += "\\multicolumn{4}{l}{Average runtime (s)} & ";
@@ -446,9 +503,68 @@ public class DataMerger3 {
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR2\\tnote");
             out.write(line);
 
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create one master table with all results
+     */
+    private static void writeComparisonH() {
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/comparisonRTR.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{rrrr}\r\n\\hline\r\n";
+            // Title
+            for (int solver = 3; solver < 5; solver++) {
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver - 2) + "}";
+            }
+            line += " & Combined\\tnote{3} \\\\\r\n\\hline\r\n";
+
+            // Write gaps
+            double[] gaps = getGaps(0, instanceData.length - 1);
+            line += "Average gap with best known (\\%)";
+            for (int solver = 4; solver < 6; solver++) {
+                line += " & " + round(gaps[solver]);
+            }
+            line += " & " + gapCombined(0,instanceData.length - 1);
+            line += "\\\\\r\n";
+            // Write number of best results
+            int[] wins = getNrWins(0, instanceData.length - 1);
+            line += "Number of best results";
+            for (int solver = 4; solver < 6; solver++) {
+                line += " & " + wins[solver];
+            }
+            line += " & " + nrWinsCombined(0,instanceData.length - 1);
+            line += "\\\\\r\n";
+            // Write times
+            double[] runtimes = getRuntimes(0, instanceData.length - 1);
+            line += "Average runtime (s)";
+            for (int solver = 4; solver < 6; solver++) {
+                line += " & " + round(runtimes[solver]);
+            }
+            line += " & " + round(runtimes[4] + runtimes[5]);
+            line += "\\\\\r\n\\hline\r\n\\end{tabular}";
+            line = line.replace("_", "\\_");
+            line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR2\\tnote");
+            out.write(line);
             // Close the output stream
             out.close();
         } catch (Exception e) {// Catch exception if any
@@ -486,6 +602,13 @@ public class DataMerger3 {
                 line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
+            // Write number of best results
+            int[] wins = getNrWins(0, 9);
+            line += "Number of best results";
+            for (int solver = 1; solver < solverNames.length + 1; solver++) {
+                line += " & " + wins[solver];
+            }
+            line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, 9);
             line += "Average runtime (s)";
@@ -496,6 +619,7 @@ public class DataMerger3 {
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -534,6 +658,13 @@ public class DataMerger3 {
                 line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
+            // Write number of best results
+            int[] wins = getNrWins(0, 44);
+            line += "Number of best results";
+            for (int solver = 2; solver < solverNames.length + 1; solver++) {
+                line += " & " + wins[solver];
+            }
+            line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, 44);
             line += "Average runtime (s)";
@@ -544,6 +675,7 @@ public class DataMerger3 {
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -582,6 +714,13 @@ public class DataMerger3 {
                 line += " & " + round(gaps[solver]);
             }
             line += "\\\\\r\n";
+            // Write number of best results
+            int[] wins = getNrWins(0, 64);
+            line += "Number of best results";
+            for (int solver = 3; solver < solverNames.length + 1; solver++) {
+                line += " & " + wins[solver];
+            }
+            line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, 64);
             line += "Average runtime (s)";
@@ -592,6 +731,7 @@ public class DataMerger3 {
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
