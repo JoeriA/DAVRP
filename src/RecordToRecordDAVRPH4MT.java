@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 
 /**
@@ -400,20 +401,20 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         int largestTwoOptMode = -1;
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
-        ArrayList<Neighbor> mergedNeighbors = new ArrayList<Neighbor>();
+        HashSet<Integer> mergedNeighbors = new HashSet<Integer>();
         if (e.getFrom().getId() != 0) {
             for (Neighbor neighbor : e.getFrom().getNeighbors()) {
-                mergedNeighbors.add(neighbor);
+                mergedNeighbors.add(neighbor.getNeighbor());
             }
         }
         if (e.getTo().getId() != 0) {
             for (Neighbor neighbor : e.getTo().getNeighbors()) {
-                mergedNeighbors.add(neighbor);
+                mergedNeighbors.add(neighbor.getNeighbor());
             }
         }
         // Calculate saving for two opt move with each other edge in the route
-        for (Neighbor neighbor : mergedNeighbors) {
-            Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
+        for (int neighbor : mergedNeighbors) {
+            Customer cN = routeSet.getCustomers()[neighbor];
             Route rN = routeSet.getRoutes()[cN.getRoute()];
             Edge[] edges = new Edge[2];
             edges[0] = rN.getEdgeTo(cN);
