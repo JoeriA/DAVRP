@@ -142,7 +142,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
      * Perturb the solution
      */
     private void perturb() {
-        ArrayList<Customer> perturbC = new ArrayList<Customer>();
+        ArrayList<Customer> perturbC = new ArrayList<>();
         Route route;
         Customer customer;
         double sI;
@@ -223,36 +223,46 @@ public class RecordToRecordH3MT implements Callable<Solution> {
      * @return true if a move is made, false otherwise
      */
     private boolean findOnePointMove(Customer i, boolean rtr) {
+        // Stop if customer is depot, move not possible
+        if (i.getId()==0) {
+            return false;
+        }
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Edge largestSavingEdge = null;
         Route iRoute = routeSet.getRoutes()[i.getRoute()];
+        // Use hashset so no edges are tried twice
+        HashSet<Edge> edges = new HashSet<>();
         for (Neighbor neighbor : i.getNeighbors()) {
             Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
             Route rN = routeSet.getRoutes()[cN.getRoute()];
-            Edge[] edges = new Edge[2];
-            edges[0] = rN.getEdgeTo(cN);
-            edges[1] = rN.getEdgeFrom(cN);
-            for (Edge e : edges) {
-                // Only if customer i is not already in edge e and new tour is allowed
-                if (e.getFrom().getId() != i.getId() && e.getTo().getId() != i.getId() && i.getDemand() + rN.getWeight() <= Q) {
-                    saving = 0.0;
-                    // Remove customer i from its current route
-                    saving += iRoute.getEdgeTo(i).getDistance();
-                    saving += iRoute.getEdgeFrom(i).getDistance();
-                    saving -= c[iRoute.getEdgeTo(i).getFrom().getId()][iRoute.getEdgeFrom(i).getTo().getId()];
-                    // Insert customer i in edge e
-                    saving += e.getDistance();
-                    saving -= c[i.getId()][e.getFrom().getId()];
-                    saving -= c[i.getId()][e.getTo().getId()];
-                    if (saving > epsilon) {
-                        onePointMove(i, e);
-                        routeSet.setRouteLength(routeSet.getRouteLength() - saving);
-                        return true;
-                    } else if (saving > largestSaving) {
-                        largestSaving = saving;
-                        largestSavingEdge = e;
-                    }
+            edges.add(rN.getEdgeTo(cN));
+            edges.add(rN.getEdgeFrom(cN));
+        }
+        for (Edge e : edges) {
+            // Only if customer i is not already in edge e
+            if (e.getFrom().getId() == i.getId() || e.getTo().getId() == i.getId()) {
+                continue;
+            }
+            Route rN = routeSet.getRoutes()[e.getRoute()];
+            // Only if new tour is allowed
+            if (i.getRoute()==rN.getRouteNumber() || i.getDemand() + rN.getWeight() <= Q) {
+                saving = 0.0;
+                // Remove customer i from its current route
+                saving += iRoute.getEdgeTo(i).getDistance();
+                saving += iRoute.getEdgeFrom(i).getDistance();
+                saving -= c[iRoute.getEdgeTo(i).getFrom().getId()][iRoute.getEdgeFrom(i).getTo().getId()];
+                // Insert customer i in edge e
+                saving += e.getDistance();
+                saving -= c[i.getId()][e.getFrom().getId()];
+                saving -= c[i.getId()][e.getTo().getId()];
+                if (saving > epsilon) {
+                    onePointMove(i, e);
+                    routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+                    return true;
+                } else if (saving > largestSaving) {
+                    largestSaving = saving;
+                    largestSavingEdge = e;
                 }
             }
         }
@@ -298,6 +308,10 @@ public class RecordToRecordH3MT implements Callable<Solution> {
      * @return true if a move is made, false otherwise
      */
     private boolean findTwoPointMove(Customer i, boolean rtr) {
+        // Stop if customer is depot, move not possible
+        if (i.getId()==0) {
+            return false;
+        }
         double saving;
         double largestSaving = Double.NEGATIVE_INFINITY;
         Customer largestSavingCustomer = null;
@@ -452,7 +466,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         int largestTwoOptMode = -1;
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
-        HashSet<Integer> mergedNeighbors = new HashSet<Integer>();
+        HashSet<Integer> mergedNeighbors = new HashSet<>();
         if (e.getFrom().getId() != 0) {
             for (Neighbor neighbor : e.getFrom().getNeighbors()) {
                 mergedNeighbors.add(neighbor.getNeighbor());
@@ -541,8 +555,8 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         }
         Route rE = routeSet.getRoutes()[e.getRoute()];
         Route rF = routeSet.getRoutes()[f.getRoute()];
-        ArrayList<Edge> edgesR1 = new ArrayList<Edge>();
-        ArrayList<Edge> edgesR2 = new ArrayList<Edge>();
+        ArrayList<Edge> edgesR1 = new ArrayList<>();
+        ArrayList<Edge> edgesR2 = new ArrayList<>();
         Customer next = e.getTo();
         // Add edges to be removed from e and added to f to a list
         while (next.getId() != 0) {

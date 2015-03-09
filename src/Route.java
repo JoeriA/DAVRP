@@ -32,7 +32,7 @@ public class Route {
         this.inEdges = new Edge[nrOfNodes];
         this.outEdges = new Edge[nrOfNodes];
         this.customers = new Customer[nrOfNodes];
-        this.edges = new ArrayList<Edge>();
+        this.edges = new ArrayList<>();
         this.routeNumber = routeNumber;
     }
 
@@ -62,7 +62,7 @@ public class Route {
     public void addAssignedCustomer(Customer customer) {
         customer.setAssignedRoute(routeNumber);
         if (assignedCustomers == null) {
-            assignedCustomers = new ArrayList<Customer>();
+            assignedCustomers = new ArrayList<>();
             assignedCustomersInRoute = 0;
         }
         if (customer.getRoute() == routeNumber) {
@@ -72,7 +72,7 @@ public class Route {
     }
 
     public void emptyAssignment() {
-        assignedCustomers = new ArrayList<Customer>();
+        assignedCustomers = new ArrayList<>();
         assignedCustomersInRoute = 0;
     }
 
@@ -94,7 +94,7 @@ public class Route {
      */
     public void assignCurrentCustomers() {
         assignedCustomersInRoute = 0;
-        assignedCustomers = new ArrayList<Customer>();
+        assignedCustomers = new ArrayList<>();
         for (Customer c : customers) {
             if (c != null && c.getId() != 0) {
                 c.setAssignedRoute(routeNumber);
@@ -127,7 +127,7 @@ public class Route {
      * @return true if adding this customer is feasible
      */
     public boolean addCustomerFeasible(Customer add, int Q) {
-        return weight + add.getDemand() <= Q;
+        return add.getRoute() == routeNumber || weight + add.getDemand() <= Q;
     }
 
     /**
@@ -194,7 +194,7 @@ public class Route {
         // Create copy of all edges
         Edge[] inEdgesCopy = new Edge[n];
         Edge[] outEdgesCopy = new Edge[n];
-        ArrayList<Edge> edgesCopy = new ArrayList<Edge>(edges.size());
+        ArrayList<Edge> edgesCopy = new ArrayList<>(edges.size());
         Edge newEdge;
         Customer from, to;
         for (Edge e : edges) {
@@ -209,7 +209,7 @@ public class Route {
         // Copy assignments
         ArrayList<Customer> assignedCustomersCopy = null;
         if (assignedCustomers != null) {
-            assignedCustomersCopy = new ArrayList<Customer>(assignedCustomers.size());
+            assignedCustomersCopy = new ArrayList<>(assignedCustomers.size());
             for (Customer c : assignedCustomers) {
                 assignedCustomersCopy.add(newCustomers[c.getId()]);
             }
@@ -500,7 +500,7 @@ public class Route {
             firstEdge = f;
             secondEdge = e;
         }
-        ArrayList<Customer> reverseCustomers = new ArrayList<Customer>();
+        ArrayList<Customer> reverseCustomers = new ArrayList<>();
         // Find next edge to swap. In meanwhile save all intermediate edges and customers
         while (nextCustomer != secondEdge.getFrom().getId()) {
             reverseCustomers.add(outEdges[nextCustomer].getTo());

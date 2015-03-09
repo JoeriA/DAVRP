@@ -59,6 +59,9 @@ public class Customer implements Comparable<Customer> {
     }
 
     public ArrayList<Neighbor> getNeighbors() {
+        if (this.id==0) {
+            System.out.print("Warning: getNeighbors queried on depot");
+        }
         return neighbors;
     }
 
@@ -126,6 +129,9 @@ public class Customer implements Comparable<Customer> {
      * @return the number of the route this customer is in
      */
     public int getRoute() {
+        if (this.id==0) {
+            System.out.print("Critical warning: getRoute queried on depot\n");
+        }
         return route;
     }
 
