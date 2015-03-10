@@ -80,6 +80,9 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                         findTwoPointMove(i, true);
                         Route r = routeSet.getRoutes()[i.getRoute()];
                         findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                        if (r.getEdgeTo(i).getFrom().getId()==0) {
+                            findTwoOptMoveNew(r.getEdgeTo(i), true);
+                        }
                     }
                 }
             }
@@ -93,7 +96,11 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                         boolean twoPoint = findTwoPointMove(i, false);
                         Route r = routeSet.getRoutes()[i.getRoute()];
                         boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                        if (onePoint || twoPoint || twoOpt) {
+                        boolean twoOpt2 = false;
+                        if (r.getEdgeTo(i).getFrom().getId()==0) {
+                            twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
+                        }
+                        if (onePoint || twoPoint || twoOpt || twoOpt2) {
                             moveMade = true;
                         }
                     }
@@ -412,24 +419,25 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         int largestTwoOptMode = -1;
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
-        HashSet<Integer> mergedNeighbors = new HashSet<>();
+        HashSet<Edge> edges = new HashSet<>();
         if (e.getFrom().getId() != 0) {
             for (Neighbor neighbor : e.getFrom().getNeighbors()) {
-                mergedNeighbors.add(neighbor.getNeighbor());
+                Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
+                Route rN = routeSet.getRoutes()[cN.getRoute()];
+                edges.add(rN.getEdgeTo(cN));
+                edges.add(rN.getEdgeFrom(cN));
             }
         }
         if (e.getTo().getId() != 0) {
             for (Neighbor neighbor : e.getTo().getNeighbors()) {
-                mergedNeighbors.add(neighbor.getNeighbor());
+                Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
+                Route rN = routeSet.getRoutes()[cN.getRoute()];
+                edges.add(rN.getEdgeTo(cN));
+                edges.add(rN.getEdgeFrom(cN));
             }
         }
         // Calculate saving for two opt move with each other edge in the route
-        for (int neighbor : mergedNeighbors) {
-            Customer cN = routeSet.getCustomers()[neighbor];
-            Route rN = routeSet.getRoutes()[cN.getRoute()];
-            Edge[] edges = new Edge[2];
-            edges[0] = rN.getEdgeTo(cN);
-            edges[1] = rN.getEdgeFrom(cN);
+
             for (Edge f : edges) {
                 saving = 0.0;
                 startF = f.getFrom();
@@ -487,7 +495,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestTwoOptMode = twoOptMode;
                 }
             }
-        }
         // Perform least expensive move if record to record is true
         if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
             twoOptMove(e, largestSavingEdge, largestTwoOptMode);

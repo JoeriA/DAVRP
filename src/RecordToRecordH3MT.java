@@ -81,6 +81,9 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                             findTwoPointMove(i, true);
                             Route r = routeSet.getRoutes()[i.getRoute()];
                             findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                            if (r.getEdgeTo(i).getFrom().getId()==0) {
+                                findTwoOptMoveNew(r.getEdgeTo(i), true);
+                            }
                         }
                     }
                 }
@@ -88,13 +91,18 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 boolean moveMade;
                 do {
                     moveMade = false;
+                    double rec = routeSet.getRouteLength();
                     for (Customer i : routeSet.getCustomers()) {
                         if (i.getId() != 0) {
                             boolean onePoint = findOnePointMove(i, false);
                             boolean twoPoint = findTwoPointMove(i, false);
                             Route r = routeSet.getRoutes()[i.getRoute()];
                             boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                            if (onePoint || twoPoint || twoOpt) {
+                            boolean twoOpt2 = false;
+                            if (r.getEdgeTo(i).getFrom().getId()==0) {
+                                twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
+                            }
+                            if (onePoint || twoPoint || twoOpt || twoOpt2) {
                                 moveMade = true;
                             }
                         }
@@ -466,70 +474,70 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         int largestTwoOptMode = -1;
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
-        HashSet<Integer> mergedNeighbors = new HashSet<>();
+        HashSet<Edge> edges = new HashSet<>();
+        // Collect all edges in neighborhood
         if (e.getFrom().getId() != 0) {
             for (Neighbor neighbor : e.getFrom().getNeighbors()) {
-                mergedNeighbors.add(neighbor.getNeighbor());
+                Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
+                Route rN = routeSet.getRoutes()[cN.getRoute()];
+                edges.add(rN.getEdgeTo(cN));
+                edges.add(rN.getEdgeFrom(cN));
             }
         }
         if (e.getTo().getId() != 0) {
             for (Neighbor neighbor : e.getTo().getNeighbors()) {
-                mergedNeighbors.add(neighbor.getNeighbor());
+                Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
+                Route rN = routeSet.getRoutes()[cN.getRoute()];
+                edges.add(rN.getEdgeTo(cN));
+                edges.add(rN.getEdgeFrom(cN));
             }
         }
-//        Calculate saving for two opt move with each other edge in the route
-        for (int neighbor : mergedNeighbors) {
-            Customer cN = routeSet.getCustomers()[neighbor];
-            Route rN = routeSet.getRoutes()[cN.getRoute()];
-            Edge[] edges = new Edge[2];
-            edges[0] = rN.getEdgeTo(cN);
-            edges[1] = rN.getEdgeFrom(cN);
-            for (Edge f : edges) {
-                saving = 0.0;
-                startF = f.getFrom();
-                endF = f.getTo();
-                saving += e.getDistance();
-                saving += f.getDistance();
-                if (e.getRoute() == f.getRoute() && twoOptMoveFeasible(e, f, 0)) {
-                    saving -= c[startE.getId()][startF.getId()];
-                    saving -= c[endE.getId()][endF.getId()];
-                    twoOptMode = 0;
-                } else {
-                    double saving2 = saving;
-                    saving -= c[startE.getId()][endF.getId()];
-                    saving -= c[endE.getId()][startF.getId()];
-                    saving2 -= c[startE.getId()][startF.getId()];
-                    saving2 -= c[endE.getId()][endF.getId()];
-                    if (saving2 > saving) {
-                        if (twoOptMoveFeasible(e, f, 2)) {
-                            twoOptMode = 2;
-                            saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 1)) {
-                            twoOptMode = 1;
-                        } else {
-                            continue;
-                        }
+        // Calculate saving for two opt move with edges in neighborhood
+        for (Edge f : edges) {
+            saving = 0.0;
+            startF = f.getFrom();
+            endF = f.getTo();
+            saving += e.getDistance();
+            saving += f.getDistance();
+            if (e.getRoute() == f.getRoute() && twoOptMoveFeasible(e, f, 0)) {
+                saving -= c[startE.getId()][startF.getId()];
+                saving -= c[endE.getId()][endF.getId()];
+                twoOptMode = 0;
+            } else {
+                double saving2 = saving;
+                saving -= c[startE.getId()][endF.getId()];
+                saving -= c[endE.getId()][startF.getId()];
+                saving2 -= c[startE.getId()][startF.getId()];
+                saving2 -= c[endE.getId()][endF.getId()];
+                if (saving2 > saving) {
+                    if (twoOptMoveFeasible(e, f, 2)) {
+                        twoOptMode = 2;
+                        saving = saving2;
+                    } else if (twoOptMoveFeasible(e, f, 1)) {
+                        twoOptMode = 1;
                     } else {
-                        if (twoOptMoveFeasible(e, f, 1)) {
-                            twoOptMode = 1;
-                        } else if (twoOptMoveFeasible(e, f, 2)) {
-                            twoOptMode = 2;
-                            saving = saving2;
-                        } else {
-                            continue;
-                        }
+                        continue;
+                    }
+                } else {
+                    if (twoOptMoveFeasible(e, f, 1)) {
+                        twoOptMode = 1;
+                    } else if (twoOptMoveFeasible(e, f, 2)) {
+                        twoOptMode = 2;
+                        saving = saving2;
+                    } else {
+                        continue;
                     }
                 }
-                // If it is profitable, perform the move
-                if (saving > epsilon) {
-                    twoOptMove(e, f, twoOptMode);
-                    routeSet.setRouteLength(routeSet.getRouteLength() - saving);
-                    return true;
-                } else if (saving > largestSaving) {
-                    largestSaving = saving;
-                    largestSavingEdge = f;
-                    largestTwoOptMode = twoOptMode;
-                }
+            }
+            // If it is profitable, perform the move
+            if (saving > epsilon) {
+                twoOptMove(e, f, twoOptMode);
+                routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+                return true;
+            } else if (saving > largestSaving) {
+                largestSaving = saving;
+                largestSavingEdge = f;
+                largestTwoOptMode = twoOptMode;
             }
         }
         // Perform least expensive move if record to record is true
@@ -636,6 +644,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         if (e.getRoute() == f.getRoute()) {
             return true;
         }
+
         if (mode == 1 && (e.getTo() == f.getTo() || e.getFrom() == f.getFrom())) {
             return false;
         }
