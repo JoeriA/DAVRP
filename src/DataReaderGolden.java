@@ -30,7 +30,7 @@ class DataReaderGolden {
 
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Instances/Kelly/" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Instances/Golden/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
