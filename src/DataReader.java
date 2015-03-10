@@ -30,7 +30,7 @@ class DataReader {
 
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Instances/" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Instances/Spliet/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
