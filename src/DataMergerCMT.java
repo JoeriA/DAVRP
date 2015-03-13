@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerCMT {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Clarke-Wright heuristic", "Record2Record"};
+    private static String[] solverNames = {"Clarke-Wright heuristic", "Record2Record_H3_MT"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -222,22 +222,22 @@ public class DataMergerCMT {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Merged output CMT.tex");
+            FileWriter fstream = new FileWriter("../Latex/tex/resultsCMT.tex");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
 
-            line += "\\begin{table}[h]\r\n\\renewcommand{\\arraystretch}{1.2}\r\n{\r\n\\begin{tabular}{rrrr";
+            line += "\\begin{tabular}{rrrr";
             for (String ignored : solverNames) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
-            line += "Problem & n & Best known & CW";
-            for (String s : solverNames) {
-                line += " & " + s;
+            line += "Problem & n & Best known & CW\\tnote{1}";
+            for (int ns = 0; ns < solverNames.length; ns++) {
+                line += " & " + solverNames[ns] + "\\tnote{" + (ns+2) + "}";
             }
-            line += "\\\\\r\n\\hline\r\n";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Print results solvers
             for (int lineNr = 0; lineNr < nrOfInstances; lineNr++) {
@@ -260,15 +260,24 @@ public class DataMergerCMT {
             }
             line += round(mergedData[mergedData.length - 2][mergedData[mergedData.length - 2].length - 1], 2);
             line += "\\\\\r\n";
-            line += "\\multicolumn{3}{l}{Average runtime (s)} &  & ";
-            for (int col = colsBefore; col < mergedData[mergedData.length - 1].length; col++) {
+            line += "\\multicolumn{3}{l}{Average runtime (s)} & & ";
+            for (int col = colsBefore; col < mergedData[mergedData.length - 1].length-1; col++) {
                 line += round(mergedData[mergedData.length - 1][col], 1);
                 line += " & ";
             }
             line += round(mergedData[mergedData.length - 1][mergedData[mergedData.length - 1].length - 1], 1);
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}\r\n}\r\n";
-            line += "\\caption{Results Clarke-Wright algorithm on test instances from \\citet{Christofides1979}.}";
-            line += "\r\n\\label{tab:CMT}\r\n\\end{table}\r\n";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
+
+            line = line.replace("_", "\\_");
+            line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR2\\tnote");
+            line = line.replace("Clarke-Wright heuristic\\tnote", "CW\\tnote");
+            line = line.replace("Record2Record\\tnote", "RTR\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\tnote", "RTR\\tnote");
+
             out.write(line);
 
             // Close the output stream

@@ -41,7 +41,6 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         solution.setName("Record2Record_H3");
 
         // Get some data from data set
-        int n = dataSet.getNumberOfCustomers() + 1;
         Q = dataSet.getVehicleCapacity();
         c = dataSet.getTravelCosts();
 //        P = (int) Math.max((n - 1) / 2.0, 30);
@@ -51,78 +50,79 @@ public class RecordToRecordH3MT implements Callable<Solution> {
 
         Long start = System.currentTimeMillis();
 
-            Solution cwSolution;
-            ClarkeWrightMT cw;
-            if (scenario == 0) {
-                cw = new ClarkeWrightMT(dataSet, lambda);
-                cwSolution = cw.call();
-                routeSet = cwSolution.getRoutes()[0].getCopy();
-            } else {
-                cw = new ClarkeWrightMT(dataSet, lambda, scenario);
-                cwSolution = cw.call();
-                routeSet = cwSolution.getRoutes()[scenario - 1].getCopy();
-            }
-            record = cwSolution.getObjectiveValue();
-            routeSet.setRouteLength(record);
-            deviation = 0.01 * record;
-            RouteSet recordSet = routeSet.getCopy();
+        Solution cwSolution;
+        ClarkeWrightMT cw;
+        if (scenario == 0) {
+            cw = new ClarkeWrightMT(dataSet, lambda);
+            cwSolution = cw.call();
+            routeSet = cwSolution.getRoutes()[0].getCopy();
+        } else {
+            cw = new ClarkeWrightMT(dataSet, lambda, scenario);
+            cwSolution = cw.call();
+            routeSet = cwSolution.getRoutes()[scenario - 1].getCopy();
+        }
+        record = cwSolution.getObjectiveValue();
+        routeSet.setRouteLength(record);
+        deviation = 0.01 * record;
+        RouteSet recordSet = routeSet.getCopy();
 
-            int p = 0;
-            int k = 0;
-            while (p < P) {
+        int p = 0;
+        int k = 0;
+        while (p < P) {
 //                System.out.println("p: " + p);
 //                System.out.println("k: " + k);
-                // Start improvement iterations
-                for (int d = 0; d < D; d++) {
-                    // Moves with record to record
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            findOnePointMove(i, true);
-                            findTwoPointMove(i, true);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
-                            if (r.getEdgeTo(i).getFrom().getId()==0) {
-                                findTwoOptMoveNew(r.getEdgeTo(i), true);
-                            }
+            // Start improvement iterations
+            for (int d = 0; d < D; d++) {
+                // Moves with record to record
+                for (Customer i : routeSet.getCustomers()) {
+                    if (i.getId() != 0) {
+                        findOnePointMove(i, true);
+                        findTwoPointMove(i, true);
+                        Route r = routeSet.getRoutes()[i.getRoute()];
+                        findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                        if (r.getEdgeTo(i).getFrom().getId()==0) {
+                            findTwoOptMoveNew(r.getEdgeTo(i), true);
                         }
                     }
-                }
-                // Downhill moves
-                boolean moveMade;
-                do {
-                    moveMade = false;
-                    double rec = routeSet.getRouteLength();
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            boolean onePoint = findOnePointMove(i, false);
-                            boolean twoPoint = findTwoPointMove(i, false);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                            boolean twoOpt2 = false;
-                            if (r.getEdgeTo(i).getFrom().getId()==0) {
-                                twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
-                            }
-                            if (onePoint || twoPoint || twoOpt || twoOpt2) {
-                                moveMade = true;
-                            }
-                        }
-                    }
-                } while (moveMade);
-                // Update record when necessary
-                if (routeSet.getRouteLength() < record - epsilon) {
-                    record = routeSet.getRouteLength();
-                    deviation = 0.01 * record;
-                    recordSet = routeSet.getCopy();
-                    k = 0;
-//                    System.out.println("record: " + record);
-                }
-                k++;
-                if (k >= K) {
-                    perturb();
-                    p++;
-                    k = 0;
                 }
             }
+            // Downhill moves
+            boolean moveMade;
+            do {
+                moveMade = false;
+                for (Customer i : routeSet.getCustomers()) {
+                    if (i.getId() != 0) {
+                        boolean onePoint = findOnePointMove(i, false);
+                        boolean twoPoint = findTwoPointMove(i, false);
+                        Route r = routeSet.getRoutes()[i.getRoute()];
+                        boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                        boolean twoOpt2 = false;
+                        if (r.getEdgeTo(i).getFrom().getId()==0) {
+                            twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
+                        }
+                        if (onePoint || twoPoint || twoOpt || twoOpt2) {
+                            moveMade = true;
+                        }
+                    }
+                }
+            } while (moveMade);
+            // Update record when necessary
+            if (routeSet.getRouteLength() < record) {
+                record = routeSet.getRouteLength();
+                deviation = 0.01 * record;
+                recordSet = routeSet.getCopy();
+                k = 0;
+            }
+            k++;
+            if (k >= K) {
+                perturb();
+                p++;
+                k = 0;
+            }
+        }
+        if (routeSet.getRouteLength() < record) {
+            recordSet = routeSet.getCopy();
+        }
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
         solution.setObjectiveValue(recordSet.getRouteLength());

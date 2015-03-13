@@ -75,7 +75,7 @@ public class RecordToRecordH3MTMaster implements Solver {
         // Create neighbor lists
         for (Customer customer : routeSet.getCustomers()) {
             if (customer.getId() != 0) {
-                ArrayList<Neighbor> neighborList = new ArrayList<Neighbor>(n - 2);
+                ArrayList<Neighbor> neighborList = new ArrayList<>(n - 2);
                 for (Customer neighbor : routeSet.getCustomers()) {
                     if (neighbor.getId() != 0 && neighbor.getId() != customer.getId()) {
                         neighborList.add(new Neighbor(customer.getId(), neighbor.getId(), c));
@@ -115,9 +115,7 @@ public class RecordToRecordH3MTMaster implements Solver {
                 if (temp.getRoutes()[0].getRouteLength() < bestRouteSet.getRouteLength()) {
                     bestRouteSet = temp.getRoutes()[0];
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }

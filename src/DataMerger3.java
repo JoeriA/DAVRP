@@ -116,7 +116,6 @@ public class DataMerger3 {
     private static double gapCombined(int start, int end) {
         double gap2 = 0.0;
         for (int instance = start; instance <= end; instance++) {
-            double epsilon = Math.pow(10.0, -5.0);
             double best = solutionData[instance][solverNames.length - 1];
             if (solutionData[instance][solverNames.length] > 0.0 && solutionData[instance][solverNames.length] < best) {
                 best = solutionData[instance][solverNames.length];
@@ -454,13 +453,13 @@ public class DataMerger3 {
             for (String ignored : solverNames) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
             line += "Instance & n & |$\\Omega$| & $\\alpha$ & Best known";
             for (int solver = 0; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
-            line += "\\\\\r\n\\hline\r\n\\endhead\r\n\\hline\r\n\\insertTableNotes\r\n\\endfoot\r\n";
+            line += "\\\\\r\n\\midrule\r\n\\endhead\r\n\\bottomrule\r\n\\insertTableNotes\r\n\\endfoot\r\n";
 
             // For every instance and solver, create a line with all info
             for (int instance = 0; instance < instanceData.length; instance++) {
@@ -527,12 +526,12 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{rrrr}\r\n\\hline\r\n";
+            line += "\\begin{tabular}{rrrr}\r\n\\toprule\r\n";
             // Title
             for (int solver = 3; solver < 5; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver - 2) + "}";
             }
-            line += " & Combined\\tnote{3} \\\\\r\n\\hline\r\n";
+            line += " & Combined\\tnote{3} \\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, instanceData.length - 1);
@@ -540,7 +539,7 @@ public class DataMerger3 {
             for (int solver = 4; solver < 6; solver++) {
                 line += " & " + round(gaps[solver]);
             }
-            line += " & " + gapCombined(0,instanceData.length - 1);
+            line += " & " + round(gapCombined(0, instanceData.length - 1));
             line += "\\\\\r\n";
             // Write number of best results
             int[] wins = getNrWins(0, instanceData.length - 1);
@@ -557,13 +556,13 @@ public class DataMerger3 {
                 line += " & " + round(runtimes[solver]);
             }
             line += " & " + round(runtimes[4] + runtimes[5]);
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR2\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR-C\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -588,12 +587,12 @@ public class DataMerger3 {
             for (String ignored : solverNames) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
             for (int solver = 0; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
-            line += "\\\\\r\n\\hline\r\n";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, 9);
@@ -615,7 +614,7 @@ public class DataMerger3 {
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
@@ -644,12 +643,12 @@ public class DataMerger3 {
             for (int solver = 1; solver < solverNames.length; solver++) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
             for (int solver = 1; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + solver + "}";
             }
-            line += "\\\\\r\n\\hline\r\n";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, 44);
@@ -671,7 +670,7 @@ public class DataMerger3 {
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
@@ -700,12 +699,12 @@ public class DataMerger3 {
             for (int solver = 2; solver < solverNames.length; solver++) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
             for (int solver = 2; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver - 1) + "}";
             }
-            line += "\\\\\r\n\\hline\r\n";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, 64);
@@ -727,7 +726,7 @@ public class DataMerger3 {
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
             line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
@@ -755,7 +754,7 @@ public class DataMerger3 {
         // Initialize temporary variables
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Instances/DAVRPInstance" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Instances/Spliet/DAVRPInstance" + fileName + ".txt"));
             String s;
             String[] split;
 

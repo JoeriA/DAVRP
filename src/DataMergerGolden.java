@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerGolden {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Record2Record_H2", "Record2Record_H3", "Record2Record_H4", "Clarke-Wright heuristic"};
+    private static String[] solverNames = {"Record2Record_H3_MT", "Clarke-Wright heuristic"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -22,7 +22,7 @@ public class DataMergerGolden {
         nrOfInstances = 12;
         colsBefore = 5;
 
-        mergedData = new String[nrOfInstances + 2][colsBefore - 1 + solverNames.length];
+        mergedData = new String[nrOfInstances + 2][colsBefore + solverNames.length];
         runTimeData = new double[2][solverNames.length];
 
         readDataFile();
@@ -61,12 +61,11 @@ public class DataMergerGolden {
             for (int line = 0; line < nrOfInstances; line++) {
                 s = reader.readLine();
                 split = s.split("\t");
-                System.arraycopy(split, 0, mergedData[line], 0, 3);
-                mergedData[line][3] = split[4];
+                System.arraycopy(split, 0, mergedData[line], 0, 5);
             }
             s = reader.readLine();
             split = s.split("\t");
-            mergedData[mergedData.length - 1][3] = split[4];
+            System.arraycopy(split, 3, mergedData[mergedData.length - 1], 3, 2);
         } catch (IOException e) {
             System.out.println("Error reading data file");
         } finally {
@@ -89,7 +88,7 @@ public class DataMergerGolden {
     private static void readInstanceSingle(String fileName, int instance) {
         // Write info
         for (int i = 0; i < solverNames.length; i++) {
-            readFile("kelly" + fileName + "_results_" + solverNames[i], instance, (i + colsBefore - 1));
+            readFile("kelly" + fileName + "_results_" + solverNames[i], instance, (i + colsBefore));
         }
     }
 
@@ -112,8 +111,8 @@ public class DataMergerGolden {
             // Save runtime
             s = reader.readLine();
             split = s.split("\t");
-            runTimeData[0][solver - colsBefore + 1] += Double.parseDouble(split[split.length - 1]);
-            runTimeData[1][solver - colsBefore + 1] += 1.0;
+            runTimeData[0][solver - colsBefore] += Double.parseDouble(split[split.length - 1]);
+            runTimeData[1][solver - colsBefore] += 1.0;
             // Save value
             s = reader.readLine();
             split = s.split("\t");
@@ -137,7 +136,7 @@ public class DataMergerGolden {
     private static void calculateMeanRuntimes() {
         mergedData[mergedData.length - 1][0] = "Average runtime (s)";
         for (int i = 0; i < solverNames.length; i++) {
-            mergedData[mergedData.length - 1][i + colsBefore - 1] = "" + (runTimeData[0][i] / runTimeData[1][i]);
+            mergedData[mergedData.length - 1][i + colsBefore] = "" + (runTimeData[0][i] / runTimeData[1][i]);
         }
     }
 
@@ -145,7 +144,7 @@ public class DataMergerGolden {
      * Calculate best solution for each instance and calculate average gap for each solver
      */
     private static void calculateBestValues() {
-        double[] gaps = new double[solverNames.length + 1];
+        double[] gaps = new double[solverNames.length + 2];
         for (int i = 0; i < mergedData.length - 2; i++) {
             for (int j = colsBefore - 2; j < mergedData[i].length; j++) {
                 if (mergedData[i][j] != null) {
@@ -223,22 +222,22 @@ public class DataMergerGolden {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Merged output Golden.tex");
+            FileWriter fstream = new FileWriter("../Latex/tex/resultsGolden.tex");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
 
-            line += "\\begin{table}[h]\r\n\\renewcommand{\\arraystretch}{1.2}\r\n{\r\n\\begin{tabular}{rrrr";
+            line += "\\begin{tabular}{rrrrr";
             for (String ignored : solverNames) {
                 line += "r";
             }
-            line += "}\r\n\\hline\r\n";
+            line += "}\r\n\\toprule\r\n";
             // Title
-            line += "Problem & \\# Customers & Best solution & VRTR";
-            for (String s : solverNames) {
-                line += " & " + s;
+            line += "Problem & \\# Customers & Best solution & RTR\\tnote{1} & RTR\\tnote{2}";
+            for (int ns = 0; ns < solverNames.length; ns++) {
+                line += " & " + solverNames[ns] + "\\tnote{" + (ns+3) + "}";
             }
-            line += "\\\\\r\n\\hline";
+            line += "\\\\\r\n\\midrule";
 
             // Print results solvers
             for (int lineNr = 0; lineNr < nrOfInstances; lineNr++) {
@@ -267,12 +266,15 @@ public class DataMergerGolden {
                 line += " & ";
             }
             line += round(mergedData[mergedData.length - 1][mergedData[mergedData.length - 1].length - 1], 1);
-            line += "\\\\\r\n\\hline\r\n\\end{tabular}\r\n}\r\n";
-            line += "\\caption{Results record-to-record algorithms on test instances from \\citet{Golden1998}." +
-                    "VRTR is the algorithm of \\citet{Li2005}." +
-                    "RTR is our implementation, where the first one is not sorted," +
-                    "in asc neighbors are sorted on ascending distance and in desc on descending distance.}";
-            line += "\r\n\\label{tab:golden}\r\n\\end{table}\r\n";
+            line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
+
+            line = line.replace("_", "\\_");
+            line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
+            line = line.replace("Record2Record\\_H4\\tnote", "RTR\\tnote");
+            line = line.replace("Clarke-Wright heuristic\\tnote", "CW\\tnote");
+            line = line.replace("Record2Record\\tnote", "RTR\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\tnote", "RTR\\tnote");
+
             out.write(line);
 
             // Close the output stream

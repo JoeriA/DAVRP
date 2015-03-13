@@ -107,16 +107,14 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 }
             } while (moveMade);
             // Update record when necessary
-            if (routeSet.getRouteLength() < record - epsilon) {
+            if (routeSet.getRouteLength() < record) {
                 record = routeSet.getRouteLength();
                 deviation = 0.01 * record;
                 recordSet = routeSet.getCopy();
                 k = 0;
-//                    System.out.println("record: " + record);
             }
             k++;
         }
-
         return recordSet;
     }
 
