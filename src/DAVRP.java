@@ -18,24 +18,19 @@ class DAVRP {
      */
     public static void main(String[] args) {
 
-//        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplex();
+//        Solver solver = new SolverGurobi();
 //        Solver solver = new SolverCplexLargest();
 //        Solver solver = new SolverClustering();
 //        Solver solver = new SolverClusteringLargest();
 //        Solver solver = new ClarkeWright();
-//        Solver solver = new RecordToRecordLowerBound();
-//        Solver solver = new RecordToRecordDAVRP();
-//        Solver solver = new RecordToRecordDAVRPImproved();
-//        Solver solver = new RecordToRecordH();
-        Solver solver = new RecordToRecordH3MTMaster();
-//        Solver solver = new RecordToRecordDAVRPH();
-//        Solver solver = new RecordToRecordDAVRPH4MTMaster();
-//        Solver solver = new RecordToRecordDAVRP2MTMaster();
+        Solver solver = new RecordToRecordH3MTMaster(); // Heuristic for VRP
+//        Solver solver = new RecordToRecordDAVRPH4MTMaster(); // Heuristic for DAVRP
+//        Solver solver = new RecordToRecordDAVRP2MTMaster(); // Heuristic for DAVRP with cplex-clustering
 
-        int start = 1;
-        int end = 0;
-        boolean testCMT = false;
+        int start = 1; // min is 1
+        int end = 0; // max is 125
+        boolean testCMT = true;
         boolean testGolden = true;
 
         boolean silent = true;
@@ -44,7 +39,7 @@ class DAVRP {
             if (i <= 65) {
                 String instance = "DAVRPInstance" + i;
                 try {
-                    System.out.println("Solving " + instance);
+                    System.out.print("Solving " + instance);
                     Frame frame = new Frame();
                     DataReader dataReader = new DataReader();
                     DataSet dataSet = dataReader.readFile(instance);
@@ -53,22 +48,20 @@ class DAVRP {
                     }
                     Solution solution = solver.solve(dataSet);
                     if (solution != null) {
-                        System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
+                        System.out.println("\tValue: " + round(solution.getObjectiveValue(),2) + "\tTime: " + solution.getRunTime());
                         if (!silent) {
                             frame.drawResults(solution);
                         }
                         writeToFile(instance, solution);
                     }
-                } catch (GRBException e) {
-                    e.printStackTrace();
-                } catch (IloException e) {
+                } catch (IloException | GRBException e) {
                     e.printStackTrace();
                 }
             } else if (i <= 95 || i >= 106) {
                 for (int j = 1; j <= 3; j++) {
                     String instance = "DAVRPInstance" + i + "_" + j;
                     try {
-                        System.out.println("Solving " + instance);
+                        System.out.print("Solving " + instance);
                         Frame frame = new Frame();
                         DataReader dataReader = new DataReader();
                         DataSet dataSet = dataReader.readFile(instance);
@@ -83,16 +76,14 @@ class DAVRP {
                             }
                             writeToFile(instance, solution);
                         }
-                    } catch (GRBException e) {
-                        e.printStackTrace();
-                    } catch (IloException e) {
+                    } catch (IloException | GRBException e) {
                         e.printStackTrace();
                     }
                 }
             } else {
                 String instance = "DAVRPInstance" + i + "_1";
                 try {
-                    System.out.println("Solving " + instance);
+                    System.out.print("Solving " + instance);
                     Frame frame = new Frame();
                     DataReader dataReader = new DataReader();
                     DataSet dataSet = dataReader.readFile(instance);
@@ -107,9 +98,7 @@ class DAVRP {
                         }
                         writeToFile(instance, solution);
                     }
-                } catch (GRBException e) {
-                    e.printStackTrace();
-                } catch (IloException e) {
+                } catch (IloException | GRBException e) {
                     e.printStackTrace();
                 }
             }
@@ -120,7 +109,7 @@ class DAVRP {
             for (int i = 1; i <= 14; i++) {
                 String instance = "vrpnc" + i;
                 try {
-                    System.out.println("Solving " + instance);
+                    System.out.print("Solving " + instance);
 //                    Frame frame = new Frame();
                     DataSet dataSet = dataReaderCMT.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
@@ -136,9 +125,7 @@ class DAVRP {
                     }
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     writeToFile(instance, solution);
-                } catch (GRBException e) {
-                    e.printStackTrace();
-                } catch (IloException e) {
+                } catch (IloException | GRBException e) {
                     e.printStackTrace();
                 }
             }
@@ -154,7 +141,7 @@ class DAVRP {
                     instance = "kelly" + i;
                 }
                 try {
-                    System.out.println("Solving " + instance);
+                    System.out.print("Solving " + instance);
                     Frame frame = new Frame();
                     DataSet dataSet = dataReaderGolden.readFile(instance);
                     if (dataSet.getDropTime() != 0 || dataSet.getMaxDuration() != 999999) {
@@ -170,14 +157,11 @@ class DAVRP {
                     }
                     System.out.println("\tValue: " + solution.getObjectiveValue() + "\tTime: " + solution.getRunTime());
                     writeToFile(instance, solution);
-                } catch (GRBException e) {
-                    e.printStackTrace();
-                } catch (IloException e) {
+                } catch (IloException | GRBException e) {
                     e.printStackTrace();
                 }
             }
         }
-
     }
 
     /**
@@ -190,8 +174,8 @@ class DAVRP {
         // Write y
         try {
             // Create file
-            FileWriter fstream = new FileWriter("Test Output/" + instance + "_results_" + solution.getName() + ".txt");
-//            FileWriter fstream = new FileWriter("Temp/" + instance + "_results_" + solution.getName() + ".txt");
+//            FileWriter fstream = new FileWriter("Test Output/New param/" + instance + "_results_" + solution.getName() + ".txt");
+            FileWriter fstream = new FileWriter("Test Output New/" + instance + "_results_" + solution.getName() + ".txt");
             BufferedWriter out = new BufferedWriter(fstream);
 
             String line = "";
@@ -207,6 +191,17 @@ class DAVRP {
             out.close();
         } catch (Exception e) {// Catch exception if any
             System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static String round(double before, int precision) {
+        double factor = Math.pow(10.0, (double) precision);
+        double big = Math.round(factor * before);
+        double after = big / factor;
+        if (big % 10 == 0) {
+            return ("" + after + "0");
+        } else {
+            return ("" + after);
         }
     }
 }

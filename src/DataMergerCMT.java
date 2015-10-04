@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerCMT {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Clarke-Wright heuristic", "Record2Record_H3_MT"};
+    private static String[] solverNames = {"Clarke-Wright heuristic2", "Record2Record_H3_MT_Li", "Record2Record_H3_MT_Groeer"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -101,7 +101,7 @@ public class DataMergerCMT {
     private static void readFile(String fileName, int instance, int solver) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Output/" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Output New/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
@@ -233,7 +233,7 @@ public class DataMergerCMT {
             }
             line += "}\r\n\\toprule\r\n";
             // Title
-            line += "Problem & n & Best known & CW\\tnote{1}";
+            line += "Problem & n & Best known & Toth\\tnote{1}";
             for (int ns = 0; ns < solverNames.length; ns++) {
                 line += " & " + solverNames[ns] + "\\tnote{" + (ns+2) + "}";
             }
@@ -253,7 +253,7 @@ public class DataMergerCMT {
                 line += "\\\\\r\n";
             }
             // Print average gaps
-            line += "\\multicolumn{3}{l}{Avg. gap (\\%)} & ";
+            line += "\\multicolumn{3}{l}{Average gap (\\%)} & ";
             for (int col = colsBefore - 1; col < mergedData[mergedData.length - 2].length - 1; col++) {
                 line += round(mergedData[mergedData.length - 2][col], 2);
                 line += " & ";
@@ -262,7 +262,7 @@ public class DataMergerCMT {
             line += "\\\\\r\n";
             line += "\\multicolumn{3}{l}{Average runtime (s)} & & ";
             for (int col = colsBefore; col < mergedData[mergedData.length - 1].length-1; col++) {
-                line += round(mergedData[mergedData.length - 1][col], 1);
+                line += round(mergedData[mergedData.length - 1][col], 2);
                 line += " & ";
             }
             line += round(mergedData[mergedData.length - 1][mergedData[mergedData.length - 1].length - 1], 1);
@@ -274,9 +274,14 @@ public class DataMergerCMT {
             line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR2\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR2\\tnote");
-            line = line.replace("Clarke-Wright heuristic\\tnote", "CW\\tnote");
+            line = line.replace("Clarke-Wright heuristic2\\tnote", "CW\\tnote");
             line = line.replace("Record2Record\\tnote", "RTR\\tnote");
             line = line.replace("Record2Record\\_H3\\_MT\\tnote", "RTR\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_Li\\tnote", "RTR-Li\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_Groeer\\tnote", "RTR-Groer\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_LiGro\\tnote", "RTR-LiGro\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_LiGro2\\tnote", "RTR-LiGro2\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_Joeri\\tnote", "RTR-Joeri2\\tnote");
 
             out.write(line);
 
@@ -290,7 +295,12 @@ public class DataMergerCMT {
     private static String round(String s, int precision) {
         double factor = Math.pow(10.0, (double) precision);
         double before = Double.parseDouble(s);
-        double after = Math.round(factor * before) / factor;
-        return ("" + after);
+        double big = Math.round(factor * before);
+        double after = big / factor;
+        if (big % 10 == 0) {
+            return ("" + after + "0");
+        } else {
+            return ("" + after);
+        }
     }
 }
