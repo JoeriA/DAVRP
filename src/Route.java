@@ -473,6 +473,29 @@ public class Route {
             addEdge(new Edge(customerJ, customerI, c));
 
             return true;
+        } else if (beforeDepot(customerI) && other.beforeDepot(customerJ)) {
+            // Remove edges from/to depot
+            removeEdge(customerI, customers[0]);
+            other.removeEdge(customerJ, customers[0]);
+            // Add all other edges from second route into this one
+            for (Edge e : other.getEdges()) {
+                addEdge(new Edge(e.getTo(), e.getFrom(), c));
+            }
+            // Add new edge from saving
+            addEdge(new Edge(customerI, customerJ, c));
+            return true;
+        } else if (afterDepot(customerI) && other.afterDepot(customerJ)) {
+            // Remove edges from/to depot
+            removeEdge(customers[0], customerI);
+            other.removeEdge(customers[0], customerJ);
+            // Add all other edges from second route into this one
+            for (Edge e : other.getEdges()) {
+                addEdge(new Edge(e.getTo(), e.getFrom(), c));
+            }
+            // Add new edge from saving
+            addEdge(new Edge(customerJ, customerI, c));
+
+            return true;
         } else {
             return false;
         }

@@ -8,15 +8,10 @@ import java.util.concurrent.Callable;
  * Implementation record-to-record heuristic
  * H3 with advanced parameters
  */
-public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
+public class RecordToRecordDAVRPH4MTF implements Callable<RouteSet> {
 
-    private double epsilon = Math.pow(10.0, -2.0);
+    private double epsilon = Math.pow(10.0, -10.0);
     private double record;
-    private double deviation;
-    private int K2;
-    private int D2;
-    private int P2;
-    private double delta;
     private double[][] c;
     private int Q;
     private double alpha;
@@ -26,14 +21,10 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordDAVRPH4MT(DataSet dataSet, RouteSet routeSet, int scenario, int K2, int D2, int P2, double delta) {
+    public RecordToRecordDAVRPH4MTF(DataSet dataSet, RouteSet routeSet, int scenario) {
         // Parameters
         this.routeSet = routeSet;
         this.scenario = scenario;
-        this.K2 = K2;
-        this.D2 = D2;
-        this.P2 = P2;
-        this.delta = delta;
         this.Q = dataSet.getVehicleCapacity();
         this.c = dataSet.getTravelCosts();
         this.alpha = dataSet.getAlpha();
@@ -69,30 +60,8 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         }
 
         record = routeSet.getRouteLength();
-        deviation = delta * record;
         RouteSet recordSet = routeSet.getCopy();
 
-        int p = 0;
-        int k = 0;
-        while (p < P2) {
-//                System.out.println("p: " + p);
-//                System.out.println("k: " + k);
-                // Start improvement iterations
-                for (int d = 0; d < D2; d++) {
-                    // Moves with record to record
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            findOnePointMove(i, true);
-                            findTwoPointMove(i, true);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
-                            r = routeSet.getRoutes()[i.getRoute()];
-                            if (r.getEdgeTo(i).getFrom().getId() == 0) {
-                                findTwoOptMoveNew(r.getEdgeTo(i), true);
-                            }
-                        }
-                    }
-                }
                 // Downhill moves
                 boolean moveMade;
                 do {
@@ -115,25 +84,10 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     }
                 } while (moveMade);
                 // Update record when necessary
-                if (routeSet.getRouteLength() <= record - epsilon) {
+                if (routeSet.getRouteLength() < record - epsilon) {
                     record = routeSet.getRouteLength();
-                    deviation = delta * record;
                     recordSet = routeSet.getCopy();
-                    k = 0;
                 }
-                k++;
-                if (k >= K2) {
-                    perturb();
-                    p++;
-                    k = 0;
-                }
-            if (routeSet.getRouteLength() <= record - epsilon) {
-                record = routeSet.getRouteLength();
-                deviation = delta * record;
-                recordSet = routeSet.getCopy();
-            }
-        }
-
         return recordSet;
     }
 
@@ -269,7 +223,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 saving += e.getDistance();
                 saving -= c[i.getId()][e.getFrom().getId()];
                 saving -= c[i.getId()][e.getTo().getId()];
-                if (saving >= epsilon) {
+                if (saving > epsilon) {
                     onePointMove(i, e);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -278,11 +232,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestSavingEdge = e;
                 }
             }
-        }
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            onePointMove(i, largestSavingEdge);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
         }
         return false;
     }
@@ -396,7 +345,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 } else {
                     saving = Double.NEGATIVE_INFINITY;
                 }
-                if (saving >= epsilon) {
+                if (saving > epsilon) {
                     twoPointMove(i, j);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -405,11 +354,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestSavingCustomer = j;
                 }
             }
-        }
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            twoPointMove(i, largestSavingCustomer);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
         }
         return false;
     }
@@ -545,7 +489,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     }
                 }
                 // If it is profitable, perform the move
-                if (saving >= epsilon) {
+                if (saving > epsilon) {
                     twoOptMove(e, f, twoOptMode);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -555,12 +499,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestTwoOptMode = twoOptMode;
                 }
             }
-        // Perform least expensive move if record to record is true
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            twoOptMove(e, largestSavingEdge, largestTwoOptMode);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
-        }
         return false;
     }
 

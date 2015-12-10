@@ -17,6 +17,8 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
 
     private int K2;
     private int D2;
+    private int P2;
+    private double delta;
     private int NBListSize;
     private double beta;
     private int n;
@@ -26,8 +28,10 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
      */
     public RecordToRecordDAVRP2MTMaster() {
         // Parameters
-        K2 = 5;
-        D2 = 5;
+        K2 = 7;
+        D2 = 20;
+        P2 = 2;
+        delta = 0.01;
         NBListSize = 40;
         beta = 0.6;
     }
@@ -37,7 +41,7 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
      *
      * @param dataSet data set to be solved
      */
-    public Solution solve(DataSet dataSet) throws GRBException, IloException {
+    public Solution solve(DataSet dataSet) throws IloException, GRBException {
 
         Solution solution = new Solution();
         solution.setName("RTR_DAVRP_2_MT");
@@ -55,7 +59,7 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
         // Create neighbor lists
         for (Customer customer : routeSet.getCustomers()) {
             if (customer.getId() != 0) {
-                ArrayList<Neighbor> neighborList = new ArrayList<Neighbor>(n - 2);
+                ArrayList<Neighbor> neighborList = new ArrayList<>(n - 2);
                 for (Customer neighbor : routeSet.getCustomers()) {
                     if (neighbor.getId() != 0 && neighbor.getId() != customer.getId()) {
                         neighborList.add(new Neighbor(customer.getId(), neighbor.getId(), c));
@@ -98,7 +102,7 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
         Future[] futures = new Future[o];
 
         for (int scenario = 0; scenario < o; scenario++) {
-            futures[scenario] = pool.submit(new RecordToRecordDAVRPH4MT(dataSet.getCopy(), basisSolution.getRoutes()[scenario], scenario, K2, D2));
+            futures[scenario] = pool.submit(new RecordToRecordDAVRPH4MT(dataSet.getCopy(), basisSolution.getRoutes()[scenario], scenario, K2, D2, P2, delta));
         }
 
         for (int scenario = 0; scenario < o; scenario++) {
@@ -106,9 +110,7 @@ public class RecordToRecordDAVRP2MTMaster implements Solver {
                 RouteSet temp = (RouteSet) futures[scenario].get();
                 solutions[scenario] = temp;
                 objectiveValue += temp.getRouteLength() * dataSet.getScenarioProbabilities()[scenario];
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }

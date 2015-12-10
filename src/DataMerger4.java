@@ -6,13 +6,14 @@ import java.util.Locale;
  * Created by Joeri on 15-5-2014.
  * Create class for merging all outputs from different solvers
  */
-public class DataMerger3 {
+public class DataMerger4 {
 
     private static String[][] instanceData;
     private static String[] solverNames = new String[]{"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4_MT", "RTR_DAVRP_2_MT"};
+    private static int solverSensitivity = 4; // solver for which sensitivity must be calculated
     private static double[][] solutionData;
     private static double[][] runTimeData;
-    private static String folder = "param5/";
+    private static String folder = "";
 
     /**
      * Merge all outputs from different solvers
@@ -67,6 +68,7 @@ public class DataMerger3 {
         writeComparisonH1();
         writeComparisonH2();
         writeComparisonH3();
+        writeSensitivityN();
     }
 
     private static double[] getRuntimes(int start, int end) {
@@ -239,7 +241,7 @@ public class DataMerger3 {
     private static void readFile(String fileName, int instance, int solver) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Output/" + folder + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Output New/" + folder + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
@@ -502,8 +504,8 @@ public class DataMerger3 {
             line += "\\\\\r\n\\end{longtable}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR-C\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
@@ -527,41 +529,42 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{rrrr}\r\n\\toprule\r\n";
+            line += "\\begin{tabular}{rrr}\r\n\\toprule\r\n";
             // Title
             for (int solver = 3; solver < 5; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver - 2) + "}";
             }
-            line += " & Combined\\tnote{3} \\\\\r\n\\midrule\r\n";
+//            line += " & Combined\\tnote{3}";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0, instanceData.length - 1);
+            double[] gaps = getGaps(0, 64);
             line += "Average gap with best known (\\%)";
             for (int solver = 4; solver < 6; solver++) {
                 line += " & " + round(gaps[solver]);
             }
-            line += " & " + round(gapCombined(0, instanceData.length - 1));
+//            line += " & " + round(gapCombined(0, 64));
             line += "\\\\\r\n";
             // Write number of best results
-            int[] wins = getNrWins(0, instanceData.length - 1);
+            int[] wins = getNrWins(0, 64);
             line += "Number of best results";
             for (int solver = 4; solver < 6; solver++) {
                 line += " & " + wins[solver];
             }
-            line += " & " + nrWinsCombined(0,instanceData.length - 1);
+//            line += " & " + nrWinsCombined(0,64);
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0, instanceData.length - 1);
+            double[] runtimes = getRuntimes(0, 64);
             line += "Average runtime (s)";
             for (int solver = 4; solver < 6; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
-            line += " & " + round(runtimes[4] + runtimes[5]);
+//            line += " & " + round(runtimes[4] + runtimes[5]);
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR-C\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
@@ -618,8 +621,8 @@ public class DataMerger3 {
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -674,8 +677,8 @@ public class DataMerger3 {
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -730,8 +733,53 @@ public class DataMerger3 {
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
+            out.write(line);
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void writeSensitivityN() {
+        double[][] sensitivityTable = new double[3][3];
+        for (int n = 0; n < 3; n++) {
+            for (int i = 0; i < 10; i++) {
+                for (int omega = 0; omega < 3; omega++) {
+                    int indexN = 65 + n * 10 * 3 + i * 3 + omega;
+                    sensitivityTable[n][omega] += runTimeData[indexN][solverSensitivity]/10;
+                }
+            }
+        }
+
+        int[] nCustomer = new int[] {30, 50, 70};
+        int[] nScenarios = new int[] {10, 50, 100};
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/sensitivityN.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{lrrr";
+            line += "}\r\n\\toprule\r\n";
+            // Title
+            for (int omega = 0; omega < 3; omega++) {
+                line += " & " + nScenarios[omega] + " scenarios";
+            }
+            line += "\\\\\r\n\\midrule\r\n";
+            for (int n = 0; n < 3; n++) {
+                line += nCustomer[n] + " customers";
+                for (int omega = 0; omega < 3; omega++) {
+                    line += " & " + round(sensitivityTable[n][omega]);
+                }
+                line += "\\\\\r\n";
+            }
+            line += "\\bottomrule\r\n\\end{tabular}";
             out.write(line);
             // Close the output stream
             out.close();

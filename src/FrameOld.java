@@ -1,13 +1,9 @@
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Random;
 
@@ -15,7 +11,7 @@ import java.util.Random;
  * Created by Joeri on 13-5-2014.
  * Creating windows interface
  */
-public class Frame extends JFrame implements ChangeListener {
+public class FrameOld extends JFrame implements ChangeListener {
 
     private JPanel mainPanel;
     private JLabel mapLabel;
@@ -32,13 +28,11 @@ public class Frame extends JFrame implements ChangeListener {
     private BufferedImage assignmentsImg;
     private DataSet dataSet;
     private Solution solution;
-    private HashMap<Integer, Color> colors;
-    private double[] alphas;
 
     /**
      * Create frame to draw results on
      */
-    public Frame() {
+    public FrameOld() {
         setContentPane(mainPanel);
         setExtendedState(Window.MAXIMIZED_BOTH);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -116,7 +110,7 @@ public class Frame extends JFrame implements ChangeListener {
         for (int i = 1; i < customers.length; i++) {
             x = transformX(customers[i].getxCoordinate());
             y = transformY(customers[i].getyCoordinate());
-//            g2d.fillOval(x - (int) (size / 2.0), y - (int) (size / 2.0), size, size);
+            g2d.fillOval(x - (int) (size / 2.0), y - (int) (size / 2.0), size, size);
 //            g2d.drawString("" + customers[i].getId(), x + size, y + size);
         }
 
@@ -163,16 +157,6 @@ public class Frame extends JFrame implements ChangeListener {
         // Print all customers assigned to the same driver with the same color
         drawAssignments();
 
-        alphas = new double[dataSet.getNumberOfCustomers()];
-        for (int i = 1; i < dataSet.getNumberOfCustomers(); i++) {
-            int assigned = solution.getAssignments()[i];
-            for (int j = 0; j < dataSet.getNumberOfScenarios(); j++) {
-                if (solution.getRoutes()[j].getCustomers()[i].getRoute() == assigned) {
-                    alphas[i] += dataSet.getScenarioProbabilities()[j];
-                }
-            }
-        }
-
         drawScenario(0);
     }
 
@@ -205,58 +189,34 @@ public class Frame extends JFrame implements ChangeListener {
             m = dataSet.getNumberOfVehicles();
         }
 
-        if (clusters || drivers || solution.getAssignments() != null) {
+        if (clusters || drivers) {
 
             int n = dataSet.getNumberOfCustomers() + 1;
 
             Customer[] customers = dataSet.getCustomers();
 
-            int x, y, x1, y1, x2, y2;
+            int x1, y1, x2, y2;
 
             int size = 8;
 
             Random generator = new Random();
 
-            if (solution.getAssignments() != null) {
-                int[] assignments = solution.getAssignments();
-                colors = new HashMap<>();
-                for (int i = 1; i < assignments.length; i++) {
-                    int driver = assignments[i];
-                    Color color;
-                    if (colors.containsKey(driver)) {
-                        color = colors.get(driver);
-                    } else {
-                        int min = 0, max = 256;
-                        int c1 = generator.nextInt(max - min);
-                        int c2 = generator.nextInt(max - min - c1);
-                        int c3 = generator.nextInt(max - min - c2);
-                        color = new Color(c1, c2, c3);
-                        colors.put(driver, color);
-                    }
-                    g2d.setColor(color);
-                    x = transformX(customers[i].getxCoordinate());
-                    y = transformY(customers[i].getyCoordinate());
-                    g2d.fillOval(x - (int) (size / 2.0), y - (int) (size / 2.0), size, size);
-
-                }
-            } else {
-                // Add lines on driven routes
-                for (int j = 0; j < m; j++) {
-                    g2d.setColor(new Color(generator.nextInt(256), generator.nextInt(256), generator.nextInt(256)));
-                    for (int i = 1; i < n; i++) {
-                        if (z[i][j] == 1) {
-                            x1 = transformX(customers[i].getxCoordinate());
-                            y1 = transformY(customers[i].getyCoordinate());
-                            // If it is done with clustering heuristic, color center and draw lines to others
-                            if (clusters) {
-                                x2 = transformX(customers[j].getxCoordinate());
-                                y2 = transformY(customers[j].getyCoordinate());
-                                g2d.drawLine(x1, y1, x2, y2);
-                                g2d.fillOval(x2 - (int) (size / 2.0), y2 - (int) (size / 2.0), size, size);
-                                // If it is done exactly, color customer locations
-                            } else {
-                                g2d.fillOval(x1 - (int) (size / 2.0), y1 - (int) (size / 2.0), size, size);
-                            }
+            // Add lines on driven routes
+            for (int j = 0; j < m; j++) {
+                g2d.setColor(new Color(generator.nextInt(256), generator.nextInt(256), generator.nextInt(256)));
+                for (int i = 1; i < n; i++) {
+                    if (z[i][j] == 1) {
+                        x1 = transformX(customers[i].getxCoordinate());
+                        y1 = transformY(customers[i].getyCoordinate());
+                        // If it is done with clustering heuristic, color center and draw lines to others
+                        if (clusters) {
+                            x2 = transformX(customers[j].getxCoordinate());
+                            y2 = transformY(customers[j].getyCoordinate());
+                            g2d.drawLine(x1, y1, x2, y2);
+                            g2d.fillOval(x2 - (int) (size / 2.0), y2 - (int) (size / 2.0), size, size);
+                            // If it is done exactly, color customer locations
+                        } else {
+                            g2d.fillOval(x1 - (int) (size / 2.0), y1 - (int) (size / 2.0), size, size);
                         }
                     }
                 }
@@ -288,40 +248,24 @@ public class Frame extends JFrame implements ChangeListener {
             // Create image
             routesImg = new BufferedImage(imgDim.width, imgDim.height, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = routesImg.createGraphics();
+            g2d.setColor(Color.darkGray);
 
             int x1, x2, y1, y2;
 
             // Add lines on driven routesImg
             for (Route r : solution.getRoutes()[scenario].getRoutes()) {
                 if (r != null) {
-                    Color color = colors.get(r.getRouteNumber());
-                    double xTotal = 0.0, yTotal = 0.0;
                     for (Edge e : r.getEdges()) {
                         x1 = transformX(e.getFrom().getxCoordinate());
                         y1 = transformY(e.getFrom().getyCoordinate());
                         x2 = transformX(e.getTo().getxCoordinate());
                         y2 = transformY(e.getTo().getyCoordinate());
-//                        g2d.setColor(Color.black);
-                        g2d.setColor(color);
                         g2d.drawLine(x1, y1, x2, y2);
                         g2d.setColor(Color.white);
                         g2d.fillRect((x1 + x2) / 2 - 7, (y1 + y2) / 2 - 5, 27, 13);
                         g2d.setColor(Color.black);
                         g2d.drawString(""+e.getDistance(),(x1 + x2) / 2 - 5, (y1 + y2) / 2 + 5);
                     }
-                    Customer[] customers = dataSet.getCustomers();
-                    int nCustomers = 0;
-                    for (int i = 1; i < customers.length; i++) {
-                        Customer customer = customers[i];
-                        if (solution.getAssignments()[i] == r.getRouteNumber()) {
-                            xTotal += customer.getxCoordinate();
-                            yTotal += customer.getyCoordinate();
-                            nCustomers += 1;
-                        }
-                    }
-                    g2d.setColor(color);
-                    g2d.drawString("Costs: " + round(r.getCosts()), transformX(xTotal / nCustomers) - 40, transformY(yTotal / nCustomers) - 6);
-                    g2d.drawString("Load:  " + r.getWeight(), transformX(xTotal / nCustomers) - 40, transformY(yTotal / nCustomers) + 6);
                 }
             }
             // Print demands
@@ -331,20 +275,10 @@ public class Frame extends JFrame implements ChangeListener {
                     int x = transformX(c.getxCoordinate());
                     int y = transformY(c.getyCoordinate());
                     g2d.setColor(Color.white);
-                    g2d.fillRect(x + 4, y - 8, 10, 15);
+                    g2d.fillRect(x + 3, y - 8, 10, 15);
                     g2d.setColor(Color.black);
                     g2d.drawString("" + c.getDemand(), x + size / 2, y + size / 2);
                 }
-            }
-
-            for (int i = 1; i < dataSet.getNumberOfCustomers(); i++) {
-                Customer c = dataSet.getCustomers()[i];
-                int x = transformX(c.getxCoordinate());
-                int y = transformY(c.getyCoordinate());
-//                g2d.setColor(Color.white);
-//                g2d.fillRect(x + 4, y - 8, 10, 15);
-                g2d.setColor(Color.gray);
-                g2d.drawString("" + round(alphas[i]), x - size * 2, y - size / 2);
             }
 
             // Print info
@@ -360,12 +294,12 @@ public class Frame extends JFrame implements ChangeListener {
             ImageIcon icon = new ImageIcon(combined);
             mapLabel.setIcon(icon);
             mainPanel.repaint();
-            try {
-                File outputfile = new File("Scenario " + (scenario + 1) + ".png");
-                ImageIO.write(combined, "png", outputfile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                File outputfile = new File("Scenario " + (scenario + 1) + ".png");
+//                ImageIO.write(combined, "png", outputfile);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
 
         if (solution.getxSol() != null) {
@@ -486,7 +420,7 @@ public class Frame extends JFrame implements ChangeListener {
     }
 
     private static String round(double s) {
-        DecimalFormat df = new DecimalFormat("0.00");
+        DecimalFormat df = new DecimalFormat("0.000");
         return df.format(s);
     }
 }

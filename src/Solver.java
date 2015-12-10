@@ -1,5 +1,6 @@
 import gurobi.GRBException;
 import ilog.concert.IloException;
+import gurobi.GRBException;
 
 /**
  * Created by Joeri on 29-4-2014.

@@ -1,73 +1,44 @@
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
  * Now with second 2-opt
  */
-public class RecordToRecordH3MTMaster implements Solver {
+public class RecordToRecordH3MTFMaster implements Solver {
 
     double epsilon = Math.pow(10.0, -10.0);
-    private int D;
-    private int K;
-    private int P;
     private int NBListSize;
     private double beta;
     private double[] lambdas;
-    private double delta;
     private String solverName;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH3MTMaster() {
-        // Parameters balanced
-//        solverName = "Record2Record_H3_MT";
-//        K = 7;
-//        D = 20;
-//        P = 2;
-//        NBListSize = 40;
-//        beta = 0.6;
-//        lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-////        lambdas = new double[]{0.6, 1.4, 1.6};
-//        delta = 0.01;
-
-//        // Parameters Li
-//        solverName = "Record2Record_H3_MT_Li";
-//        K = 5;
-//        D = 30;
-//        P = 2;
-//        NBListSize = 40;
-//        beta = 0.6;
-//        lambdas = new double[]{0.6, 1.4, 1.6};
-//        delta = 0.01;
-
-        // Parameters Groër
-        solverName = "Record2Record_H3_MT_Groeer";
-        K = 5;
-        D = 30;
-        P = 2;
-        NBListSize = 30;
-        beta = 1.0;
+    public RecordToRecordH3MTFMaster() {
+        solverName = "Record2Record_H3_MT_param5";
+        // Parameters
+        NBListSize = 40;
+        beta = 0.6;
         lambdas = new double[]{0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
-        delta = 0.01;
+//        lambdas = new double[]{0.6, 1.4, 1.6};
     }
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH3MTMaster(double[] lambdas, int K, int D, int P, int NBListSize, double beta, double delta) {
+    public RecordToRecordH3MTFMaster(double[] lambdas, int NBListSize, double beta) {
         // Parameters
         solverName = "Record2Record_H3_MT";
         this.lambdas = lambdas;
-        this.K = K;
-        this.D = D;
-        this.P = P;
         this.NBListSize = NBListSize;
         this.beta = beta;
-        this.delta = delta;
     }
 
     /**
@@ -133,7 +104,7 @@ public class RecordToRecordH3MTMaster implements Solver {
         Future[] futures = new Future[lambdas.length];
 
         for (int i = 0; i < lambdas.length; i++) {
-            futures[i] = pool.submit(new RecordToRecordH3MT(dataSet.getCopy(), lambdas[i], D, K, P, delta));
+            futures[i] = pool.submit(new RecordToRecordH3MTF(dataSet.getCopy(), lambdas[i]));
         }
 
         for (Future future : futures) {

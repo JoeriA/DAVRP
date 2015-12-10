@@ -10,7 +10,7 @@ import java.util.concurrent.Callable;
  */
 public class RecordToRecordH3MT implements Callable<Solution> {
 
-    double epsilon = Math.pow(10.0, -10.0);
+    double epsilon = Math.pow(10.0, -2.0);
     private double record;
     private double deviation;
     private int D;
@@ -22,17 +22,19 @@ public class RecordToRecordH3MT implements Callable<Solution> {
     private DataSet dataSet;
     private int scenario;
     private double lambda;
+    private double delta;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordH3MT(DataSet dataSet, double lambda, int D, int K, int P) {
+    public RecordToRecordH3MT(DataSet dataSet, double lambda, int D, int K, int P, double delta) {
         // Parameters
         this.D = D;
         this.K = K;
         this.P = P;
         this.dataSet = dataSet;
         this.lambda = lambda;
+        this.delta = delta;
     }
 
     public Solution call() {
@@ -63,7 +65,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         }
         record = cwSolution.getObjectiveValue();
         routeSet.setRouteLength(record);
-        deviation = 0.01 * record;
+        deviation = delta * record;
         RouteSet recordSet = routeSet.getCopy();
 
         int p = 0;
@@ -107,9 +109,9 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 }
             } while (moveMade);
             // Update record when necessary
-            if (routeSet.getRouteLength() < record) {
+            if (routeSet.getRouteLength() <= record - epsilon) {
                 record = routeSet.getRouteLength();
-                deviation = 0.01 * record;
+                deviation = delta * record;
                 recordSet = routeSet.getCopy();
                 k = 0;
             }
@@ -119,9 +121,11 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 p++;
                 k = 0;
             }
-        }
-        if (routeSet.getRouteLength() < record) {
-            recordSet = routeSet.getCopy();
+            if (routeSet.getRouteLength() <= record - epsilon) {
+                record = routeSet.getRouteLength();
+                deviation = delta * record;
+                recordSet = routeSet.getCopy();
+            }
         }
         Long end = System.currentTimeMillis();
         solution.setRunTime((end - start) / 1000.0);
@@ -203,6 +207,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
         for (Route route : routeSet.getRoutes()) {
             if (route != null) {
                 for (Edge e : route.getEdges()) {
+                    if (!e.getFrom().equals(from) && !e.getTo().equals(to)) {
                     saving = 0.0;
                     saving += e.getDistance();
                     saving -= c[e.getFrom().getId()][customer.getId()];
@@ -211,16 +216,23 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                         bestSaving = saving;
                         bestEdge = e;
                     }
+                    }
                 }
             }
         }
         // Perform cheapest insertion
-        assert bestEdge != null;
-        r = routeSet.getRoutes()[bestEdge.getRoute()];
-        r.removeEdge(bestEdge);
-        r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
-        r.addEdge(new Edge(customer, bestEdge.getTo(), c));
-        return totalSaving + bestSaving;
+        if(bestEdge != null) {
+            r = routeSet.getRoutes()[bestEdge.getRoute()];
+            r.removeEdge(bestEdge);
+            r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
+            r.addEdge(new Edge(customer, bestEdge.getTo(), c));
+            return totalSaving + bestSaving;
+        } else {
+            r.removeEdge(from,to);
+            r.addEdge(new Edge(from, customer, c));
+            r.addEdge(new Edge(customer, to, c));
+            return 0.0;
+        }
     }
 
     /**
@@ -264,7 +276,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 saving += e.getDistance();
                 saving -= c[i.getId()][e.getFrom().getId()];
                 saving -= c[i.getId()][e.getTo().getId()];
-                if (saving > epsilon) {
+                if (saving >= epsilon) {
                     onePointMove(i, e);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -391,7 +403,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 } else {
                     saving = Double.NEGATIVE_INFINITY;
                 }
-                if (saving > epsilon) {
+                if (saving >= epsilon) {
                     twoPointMove(i, j);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -530,7 +542,7 @@ public class RecordToRecordH3MT implements Callable<Solution> {
                 }
             }
             // If it is profitable, perform the move
-            if (saving > epsilon) {
+            if (saving >= epsilon) {
                 twoOptMove(e, f, twoOptMode);
                 routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                 return true;

@@ -133,7 +133,7 @@ public class SolverClustering implements Solver {
         }
 
         // Optimize model
-        model.setParam(IloCplex.DoubleParam.TiLim, 60.0);
+        model.setParam(IloCplex.DoubleParam.TiLim, 3600.0);
         model.setParam(IloCplex.DoubleParam.EpGap, 0.05);
         model.setOut(null);
         Long start = System.currentTimeMillis();

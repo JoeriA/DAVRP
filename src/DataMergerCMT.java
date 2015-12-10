@@ -7,7 +7,7 @@ import java.io.*;
 public class DataMergerCMT {
 
     private static String[][] mergedData;
-    private static String[] solverNames = {"Clarke-Wright heuristic2", "Record2Record_H3_MT_Li", "Record2Record_H3_MT_Groeer"};
+    private static String[] solverNames = {"Clarke-Wright heuristic2", "Record2Record_H3_MT"};
     private static double[][] runTimeData;
     private static int colsBefore;
     private static int nrOfInstances;
@@ -233,7 +233,7 @@ public class DataMergerCMT {
             }
             line += "}\r\n\\toprule\r\n";
             // Title
-            line += "Problem & n & Best known & Toth\\tnote{1}";
+            line += "Problem & $n$ & Best known & Toth\\tnote{1}";
             for (int ns = 0; ns < solverNames.length; ns++) {
                 line += " & " + solverNames[ns] + "\\tnote{" + (ns+2) + "}";
             }
@@ -282,6 +282,7 @@ public class DataMergerCMT {
             line = line.replace("Record2Record\\_H3\\_MT\\_LiGro\\tnote", "RTR-LiGro\\tnote");
             line = line.replace("Record2Record\\_H3\\_MT\\_LiGro2\\tnote", "RTR-LiGro2\\tnote");
             line = line.replace("Record2Record\\_H3\\_MT\\_Joeri\\tnote", "RTR-Joeri2\\tnote");
+            line = line.replace("Record2Record\\_H3\\_MT\\_param5\\tnote", "RTR\\tnote");
 
             out.write(line);
 

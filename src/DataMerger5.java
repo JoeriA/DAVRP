@@ -1,18 +1,21 @@
 import java.io.*;
 import java.text.DecimalFormat;
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
  * Created by Joeri on 15-5-2014.
- * Create class for merging all outputs from different solvers
+ * Datamerger4 with combination rtr-hd and rtr-c
  */
-public class DataMerger3 {
+public class DataMerger5 {
 
     private static String[][] instanceData;
     private static String[] solverNames = new String[]{"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4_MT", "RTR_DAVRP_2_MT"};
+    private static double correction = 0.76;
+    private static int solverSensitivity = 4; // solver for which sensitivity must be calculated
     private static double[][] solutionData;
     private static double[][] runTimeData;
-    private static String folder = "param5/";
+    private static String folder = "";
 
     /**
      * Merge all outputs from different solvers
@@ -62,11 +65,15 @@ public class DataMerger3 {
         calculateBestValues();
         writeToFile();
         writeToLatex();
+        sensitivityTable();
         writeComparisonH();
-        solverNames = new String[]{"Exact method (CPLEX)", "H1", "H2", "RTR_DAVRP_H4_MT"};
         writeComparisonH1();
         writeComparisonH2();
         writeComparisonH3();
+        writeSensitivityN();
+        writeSensitivityNRTRHD();
+        writeSensitivityNRTRC();
+        writeSensitivityAlpha();
     }
 
     private static double[] getRuntimes(int start, int end) {
@@ -239,7 +246,7 @@ public class DataMerger3 {
     private static void readFile(String fileName, int instance, int solver) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Output/" + folder + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Output New/" + folder + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
@@ -277,7 +284,7 @@ public class DataMerger3 {
     private static void readFileRemy1(String fileName, int instance, int solver) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Output/" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Output New/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
@@ -294,7 +301,7 @@ public class DataMerger3 {
                 // Save runtime
                 s = reader.readLine();
                 split = s.split(" ");
-                runTimeData[instance][solver] = Double.parseDouble(split[split.length - 1]);
+                runTimeData[instance][solver] = Double.parseDouble(split[split.length - 1]) * correction;
             } else {
                 solutionData[instance][solver] = -1.0;
                 runTimeData[instance][solver] = -1.0;
@@ -323,7 +330,7 @@ public class DataMerger3 {
     private static void readFileRemy2(String fileName, int instance, int solver) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader("Test Output/" + fileName + ".txt"));
+            reader = new BufferedReader(new FileReader("Test Output New/" + fileName + ".txt"));
 
             // Initialize temporary variables
             String s;
@@ -341,7 +348,7 @@ public class DataMerger3 {
                 reader.readLine();
                 s = reader.readLine();
                 split = s.split(" ");
-                runTimeData[instance][solver] += Double.parseDouble(split[split.length - 1]);
+                runTimeData[instance][solver] += Double.parseDouble(split[split.length - 1]) * correction;
             } else {
                 solutionData[instance][solver] = -1.0;
                 runTimeData[instance][solver] = -1.0;
@@ -502,8 +509,8 @@ public class DataMerger3 {
             line += "\\\\\r\n\\end{longtable}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR-C\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
@@ -527,17 +534,18 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{rrrr}\r\n\\toprule\r\n";
+            line += "\\begin{tabular}{lrrrrrr}\r\n\\toprule\r\n";
             // Title
-            for (int solver = 3; solver < 5; solver++) {
-                line += " & " + solverNames[solver] + "\\tnote{" + (solver - 2) + "}";
+            for (int solver = 0; solver < 5; solver++) {
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
-            line += " & Combined\\tnote{3} \\\\\r\n\\midrule\r\n";
+            line += " & Combined\\tnote{3}";
+            line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, instanceData.length - 1);
-            line += "Average gap with best known (\\%)";
-            for (int solver = 4; solver < 6; solver++) {
+            line += "Average gap (\\%)";
+            for (int solver = 1; solver < 6; solver++) {
                 line += " & " + round(gaps[solver]);
             }
             line += " & " + round(gapCombined(0, instanceData.length - 1));
@@ -545,7 +553,7 @@ public class DataMerger3 {
             // Write number of best results
             int[] wins = getNrWins(0, instanceData.length - 1);
             line += "Number of best results";
-            for (int solver = 4; solver < 6; solver++) {
+            for (int solver = 1; solver < 6; solver++) {
                 line += " & " + wins[solver];
             }
             line += " & " + nrWinsCombined(0,instanceData.length - 1);
@@ -553,15 +561,15 @@ public class DataMerger3 {
             // Write times
             double[] runtimes = getRuntimes(0, instanceData.length - 1);
             line += "Average runtime (s)";
-            for (int solver = 4; solver < 6; solver++) {
+            for (int solver = 1; solver < 6; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
             line += " & " + round(runtimes[4] + runtimes[5]);
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\tnote", "RTR-C\\tnote");
             line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
@@ -584,30 +592,33 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{r";
+            line += "\\begin{tabular}{l";
             for (String ignored : solverNames) {
                 line += "r";
             }
-            line += "}\r\n\\toprule\r\n";
+            line += "r}\r\n\\toprule\r\n";
             // Title
             for (int solver = 0; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver + 1) + "}";
             }
+            line += " & Combined\\tnote{6}";
             line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
             double[] gaps = getGaps(0, 9);
-            line += "Average gap with best known (\\%)";
+            line += "Average gap (\\%)";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(gaps[solver]);
             }
+            line += " & " + round(gapCombined(0, 9));
             line += "\\\\\r\n";
             // Write number of best results
             int[] wins = getNrWins(0, 9);
-            line += "Number of best results";
+            line += "Nr. of best results";
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
                 line += " & " + wins[solver];
             }
+            line += " & " + nrWinsCombined(0,9);
             line += "\\\\\r\n";
             // Write times
             double[] runtimes = getRuntimes(0, 9);
@@ -615,11 +626,13 @@ public class DataMerger3 {
             for (int solver = 1; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
+            line += " & " + round(runtimes[4] + runtimes[5]);
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -640,42 +653,47 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{r";
+            line += "\\begin{tabular}{l";
             for (int solver = 1; solver < solverNames.length; solver++) {
                 line += "r";
             }
-            line += "}\r\n\\toprule\r\n";
+            line += "r}\r\n\\toprule\r\n";
             // Title
             for (int solver = 1; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + solver + "}";
             }
+            line += " & Combined\\tnote{5}";
             line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0, 44);
-            line += "Average gap with best known (\\%)";
+            double[] gaps = getGaps(10, 44);
+            line += "Average gap (\\%)";
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(gaps[solver]);
             }
+            line += " & " + round(gapCombined(10, 44));
             line += "\\\\\r\n";
             // Write number of best results
-            int[] wins = getNrWins(0, 44);
+            int[] wins = getNrWins(10, 44);
             line += "Number of best results";
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
                 line += " & " + wins[solver];
             }
+            line += " & " + nrWinsCombined(10,44);
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0, 44);
+            double[] runtimes = getRuntimes(10, 44);
             line += "Average runtime (s)";
             for (int solver = 2; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
+            line += " & " + round(runtimes[4] + runtimes[5]);
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTRDAVRP\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
@@ -696,8 +714,8 @@ public class DataMerger3 {
 
             String line = "";
 
-            line += "\\begin{tabular}{r";
-            for (int solver = 2; solver < solverNames.length; solver++) {
+            line += "\\begin{tabular}{l";
+            for (int solver = 1; solver < solverNames.length; solver++) {
                 line += "r";
             }
             line += "}\r\n\\toprule\r\n";
@@ -705,38 +723,293 @@ public class DataMerger3 {
             for (int solver = 2; solver < solverNames.length; solver++) {
                 line += " & " + solverNames[solver] + "\\tnote{" + (solver - 1) + "}";
             }
+            line += " & Combined\\tnote{4}";
             line += "\\\\\r\n\\midrule\r\n";
 
             // Write gaps
-            double[] gaps = getGaps(0, 64);
-            line += "Average gap with best known (\\%)";
+            double[] gaps = getGaps(45, 64);
+            line += "Average gap (\\%)";
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(gaps[solver]);
             }
+            line += " & " + round(gapCombined(45, 64));
             line += "\\\\\r\n";
             // Write number of best results
-            int[] wins = getNrWins(0, 64);
+            int[] wins = getNrWins(45, 64);
             line += "Number of best results";
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
                 line += " & " + wins[solver];
             }
+            line += " & " + nrWinsCombined(45,64);
             line += "\\\\\r\n";
             // Write times
-            double[] runtimes = getRuntimes(0, 64);
+            double[] runtimes = getRuntimes(45, 64);
             line += "Average runtime (s)";
             for (int solver = 3; solver < solverNames.length + 1; solver++) {
                 line += " & " + round(runtimes[solver]);
             }
+            line += " & " + round(runtimes[4] + runtimes[5]);
             line += "\\\\\r\n\\bottomrule\r\n\\end{tabular}";
             line = line.replace("_", "\\_");
             line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-LD\\tnote");
-            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-LD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
             out.write(line);
             // Close the output stream
             out.close();
         } catch (Exception e) {// Catch exception if any
             System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+
+    private static void writeSensitivityN() {
+        double[][] sensitivityTable = new double[3][3];
+        for (int n = 0; n < 3; n++) {
+            for (int i = 0; i < 10; i++) {
+                for (int omega = 0; omega < 3; omega++) {
+                    int indexN = 65 + n * 10 * 3 + i * 3 + omega;
+                    sensitivityTable[n][omega] += runTimeData[indexN][solverSensitivity]/10;
+                }
+            }
+        }
+
+        int[] nCustomer = new int[] {30, 50, 70};
+        int[] nScenarios = new int[] {10, 50, 100};
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/sensitivityN.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{lrrr";
+            line += "}\r\n\\toprule\r\n";
+            // Title
+            for (int omega = 0; omega < 3; omega++) {
+                line += " & " + nScenarios[omega] + " scenarios";
+            }
+            line += "\\\\\r\n\\midrule\r\n";
+            for (int n = 0; n < 3; n++) {
+                line += nCustomer[n] + " customers";
+                for (int omega = 0; omega < 3; omega++) {
+                    line += " & " + round(sensitivityTable[n][omega]);
+                }
+                line += "\\\\\r\n";
+            }
+            line += "\\bottomrule\r\n\\end{tabular}";
+            out.write(line);
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void writeSensitivityNRTRHD() {
+        double[][] sensitivityTable = new double[3][3];
+        for (int n = 0; n < 3; n++) {
+            for (int i = 0; i < 10; i++) {
+                for (int omega = 0; omega < 3; omega++) {
+                    int indexN = 65 + n * 10 * 3 + i * 3 + omega;
+                    sensitivityTable[n][omega] += getGaps(indexN, indexN)[solverSensitivity]/10;
+                }
+            }
+        }
+
+        int[] nCustomer = new int[] {30, 50, 70};
+        int[] nScenarios = new int[] {10, 50, 100};
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/sensitivityRTRHD.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{lrrr";
+            line += "}\r\n\\toprule\r\n";
+            // Title
+            for (int omega = 0; omega < 3; omega++) {
+                line += " & " + nScenarios[omega] + " scenarios";
+            }
+            line += "\\\\\r\n\\midrule\r\n";
+            for (int n = 0; n < 3; n++) {
+                line += nCustomer[n] + " customers";
+                for (int omega = 0; omega < 3; omega++) {
+                    line += " & " + round(sensitivityTable[n][omega]);
+                }
+                line += "\\\\\r\n";
+            }
+            line += "\\bottomrule\r\n\\end{tabular}";
+            out.write(line);
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void writeSensitivityNRTRC() {
+        double[][] sensitivityTable = new double[3][3];
+        for (int n = 0; n < 3; n++) {
+            for (int i = 0; i < 10; i++) {
+                for (int omega = 0; omega < 3; omega++) {
+                    int indexN = 65 + n * 10 * 3 + i * 3 + omega;
+                    sensitivityTable[n][omega] += getGaps(indexN, indexN)[solverSensitivity + 1]/10;
+                }
+            }
+        }
+
+        int[] nCustomer = new int[] {30, 50, 70};
+        int[] nScenarios = new int[] {10, 50, 100};
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/sensitivityRTRC.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{lrrr";
+            line += "}\r\n\\toprule\r\n";
+            // Title
+            for (int omega = 0; omega < 3; omega++) {
+                line += " & " + nScenarios[omega] + " scenarios";
+            }
+            line += "\\\\\r\n\\midrule\r\n";
+            for (int n = 0; n < 3; n++) {
+                line += nCustomer[n] + " customers";
+                for (int omega = 0; omega < 3; omega++) {
+                    if (sensitivityTable[n][omega] >= 0) {
+                        line += " & " + round(sensitivityTable[n][omega]);
+                    } else {
+                        line += " & - ";
+                    }
+                }
+                line += "\\\\\r\n";
+            }
+            line += "\\bottomrule\r\n\\end{tabular}";
+            out.write(line);
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void writeSensitivityAlpha() {
+        double[][] sensitivityTable = new double[3][solverNames.length + 2];
+
+        for (int alpha = 0; alpha < 3; alpha++) {
+            for (int instance = 0; instance < 20; instance++) {
+                int indexN = 165 + instance * 3 + alpha;
+                double[] gaps = getGaps(indexN, indexN);
+                for (int solver = 0; solver < gaps.length; solver++) {
+                    sensitivityTable[alpha][solver] += gaps[solver] / 20;
+                }
+                sensitivityTable[alpha][solverNames.length + 1] += Double.min(gaps[solverNames.length], gaps[solverNames.length - 1]) / 20;
+            }
+        }
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("../Latex/tex/sensitivityAlpha.tex");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            line += "\\begin{tabular}{l";
+            for (int solver = 1; solver < solverNames.length + 1; solver++) {
+                line += "r";
+            }
+            line += "}\r\n\\toprule\r\n";
+            // Title
+            for (int solver = 1; solver < solverNames.length; solver++) {
+                line += " & " + solverNames[solver] + "\\tnote{" + (solver) + "}";
+            }
+            line += " & Combined\\tnote{5}";
+            line += "\\\\\r\n\\midrule\r\n";
+
+            double[] alphas = new double[]{0.0, 0.75, 1.0};
+            for (int alpha = 0; alpha < 3; alpha++) {
+                line += "$\\alpha$ = " + alphas[alpha];
+                for (int solver = 2; solver < solverNames.length + 2; solver++) {
+                    line += " & " + round(sensitivityTable[alpha][solver]);
+                }
+                line += "\\\\\r\n";
+            }
+            line += "\\bottomrule\r\n\\end{tabular}";
+            line = line.replace("_", "\\_");
+            line = line.replace("Exact method (CPLEX)\\tnote", "Exact\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_H4\\_MT\\tnote", "RTR-HD\\tnote");
+            line = line.replace("RTR\\_DAVRP\\_2\\_MT\\tnote", "RTR-C\\tnote");
+            out.write(line);
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing file: " + e.getMessage());
+        }
+    }
+
+    private static void sensitivityTable() {
+        HashMap<Integer, double[][]> map = new HashMap();
+        for (int i = 0; i < 65; i++) {
+            int nrOfCustomers = Integer.parseInt(instanceData[i][1]);
+            double[][] runtimes;
+            if (map.containsKey(nrOfCustomers)) {
+                runtimes = map.get(nrOfCustomers);
+            } else {
+                runtimes = new double[solverNames.length][2];
+            }
+            for (int j = 0; j < solverNames.length; j++) {
+                double value = runTimeData[i][j+1];
+                if (value > 0) {
+                    runtimes[j][0] += value;
+                    runtimes[j][1] += 1;
+                }
+            }
+            map.put(nrOfCustomers, runtimes);
+        }
+        double[][] results = new double[map.size()][1 + solverNames.length];
+        int i = 0;
+        for (int key : map.keySet()) {
+            results[i][0] = key;
+            double[][] values = map.get(key);
+            for (int j = 0; j < solverNames.length; j++) {
+                results[i][j + 1] = values[j][0] / values[j][1];
+            }
+            i++;
+        }
+
+        // Write y
+        try {
+            // Create file
+            FileWriter fstream = new FileWriter("Runtimes.txt");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            String line = "";
+
+            for (int j = 0; j < results.length; j++) {
+                for (int k = 0; k < results[0].length; k++) {
+                    line += results[j][k] + "\t";
+                }
+                line += "\r\n";
+            }
+
+            out.write(line);
+
+            // Close the output stream
+            out.close();
+        } catch (Exception e) {// Catch exception if any
+            System.err.println("Error in writing runtimes file: " + e.getMessage());
         }
     }
 

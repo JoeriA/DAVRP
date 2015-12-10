@@ -6,135 +6,104 @@ import java.util.concurrent.Callable;
 /**
  * Created by Joeri on 19-5-2014.
  * Implementation record-to-record heuristic
- * H3 with advanced parameters
+ * Now with second 2-opt
  */
-public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
+public class RecordToRecordH3MTF implements Callable<Solution> {
 
-    private double epsilon = Math.pow(10.0, -2.0);
+    double epsilon = Math.pow(10.0, -5.0);
     private double record;
-    private double deviation;
-    private int K2;
-    private int D2;
-    private int P2;
-    private double delta;
     private double[][] c;
     private int Q;
-    private double alpha;
     private RouteSet routeSet;
+    private DataSet dataSet;
     private int scenario;
+    private double lambda;
 
     /**
      * Implementation of record-to-record heuristic for the DAVRP
      */
-    public RecordToRecordDAVRPH4MT(DataSet dataSet, RouteSet routeSet, int scenario, int K2, int D2, int P2, double delta) {
+    public RecordToRecordH3MTF(DataSet dataSet, double lambda) {
         // Parameters
-        this.routeSet = routeSet;
-        this.scenario = scenario;
-        this.K2 = K2;
-        this.D2 = D2;
-        this.P2 = P2;
-        this.delta = delta;
-        this.Q = dataSet.getVehicleCapacity();
-        this.c = dataSet.getTravelCosts();
-        this.alpha = dataSet.getAlpha();
+        this.dataSet = dataSet;
+        this.lambda = lambda;
     }
 
-    /**
-     * Solve VRP for this data set
-     */
-    public RouteSet call() {
+    public Solution call() {
 
-        // Set demands of this scenario
-        for (Customer customer : routeSet.getCustomers()) {
-            customer.setDemand(customer.getDemandPerScenario()[scenario]);
-        }
-        for (Route route : routeSet.getRoutes()) {
-            if (route != null) {
-                route.recalculateWeight();
-            }
-        }
+        Solution solution = new Solution();
+        solution.setName("Record2Record_H3");
 
-        // Insert skipped customers in better location
-        for (Customer customer : routeSet.getCustomers()) {
-            if (customer.getId() != 0 && customer.getAssignedRoute() != customer.getRoute()) {
-                double saving = applyBestInsertion(customer);
-                routeSet.setRouteLength(routeSet.getRouteLength() - saving);
-            }
-        }
-        // Remove empty routes
-        for (int i = 0; i < routeSet.getRoutes().length; i++) {
-            if (routeSet.getRoutes()[i] != null && routeSet.getRoutes()[i].getEdges().size() == 0) {
-                routeSet.getRoutes()[i] = null;
-            }
-        }
+        // Get some data from data set
+        Q = dataSet.getVehicleCapacity();
+        c = dataSet.getTravelCosts();
+//        P = (int) Math.max((n - 1) / 2.0, 30);
 
-        record = routeSet.getRouteLength();
-        deviation = delta * record;
+        routeSet = new RouteSet();
+        routeSet.setCustomers(dataSet.getCustomers());
+
+        Long start = System.currentTimeMillis();
+
+        Solution cwSolution;
+        ClarkeWrightMT cw;
+        if (scenario == 0) {
+            cw = new ClarkeWrightMT(dataSet, lambda);
+            cwSolution = cw.call();
+            routeSet = cwSolution.getRoutes()[0].getCopy();
+        } else {
+            cw = new ClarkeWrightMT(dataSet, lambda, scenario);
+            cwSolution = cw.call();
+            routeSet = cwSolution.getRoutes()[scenario - 1].getCopy();
+        }
+        record = cwSolution.getObjectiveValue();
+        routeSet.setRouteLength(record);
         RouteSet recordSet = routeSet.getCopy();
 
-        int p = 0;
-        int k = 0;
-        while (p < P2) {
-//                System.out.println("p: " + p);
-//                System.out.println("k: " + k);
-                // Start improvement iterations
-                for (int d = 0; d < D2; d++) {
-                    // Moves with record to record
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            findOnePointMove(i, true);
-                            findTwoPointMove(i, true);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            findTwoOptMoveNew(r.getEdgeFrom(i), true);
-                            r = routeSet.getRoutes()[i.getRoute()];
-                            if (r.getEdgeTo(i).getFrom().getId() == 0) {
-                                findTwoOptMoveNew(r.getEdgeTo(i), true);
-                            }
+            // Downhill moves
+            boolean moveMade;
+            do {
+                moveMade = false;
+                for (Customer i : routeSet.getCustomers()) {
+                    if (i.getId() != 0) {
+                        boolean onePoint = findOnePointMove(i, false);
+                        boolean twoPoint = findTwoPointMove(i, false);
+                        Route r = routeSet.getRoutes()[i.getRoute()];
+                        boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
+                        boolean twoOpt2 = false;
+                        if (r.getEdgeTo(i).getFrom().getId()==0) {
+                            twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
+                        }
+                        if (onePoint || twoPoint || twoOpt || twoOpt2) {
+                            moveMade = true;
                         }
                     }
                 }
-                // Downhill moves
-                boolean moveMade;
-                do {
-                    moveMade = false;
-                    for (Customer i : routeSet.getCustomers()) {
-                        if (i.getId() != 0) {
-                            boolean onePoint = findOnePointMove(i, false);
-                            boolean twoPoint = findTwoPointMove(i, false);
-                            Route r = routeSet.getRoutes()[i.getRoute()];
-                            boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                            boolean twoOpt2 = false;
-                            r = routeSet.getRoutes()[i.getRoute()];
-                            if (r.getEdgeTo(i).getFrom().getId() == 0) {
-                                twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
-                            }
-                            if (onePoint || twoPoint || twoOpt || twoOpt2) {
-                                moveMade = true;
-                            }
-                        }
-                    }
-                } while (moveMade);
-                // Update record when necessary
-                if (routeSet.getRouteLength() <= record - epsilon) {
-                    record = routeSet.getRouteLength();
-                    deviation = delta * record;
-                    recordSet = routeSet.getCopy();
-                    k = 0;
-                }
-                k++;
-                if (k >= K2) {
-                    perturb();
-                    p++;
-                    k = 0;
-                }
-            if (routeSet.getRouteLength() <= record - epsilon) {
+            } while (moveMade);
+            // Update record when necessary
+            if (routeSet.getRouteLength() < record - epsilon) {
                 record = routeSet.getRouteLength();
-                deviation = delta * record;
                 recordSet = routeSet.getCopy();
             }
+        Long end = System.currentTimeMillis();
+        solution.setRunTime((end - start) / 1000.0);
+        solution.setObjectiveValue(recordSet.getRouteLength());
+        solution.setAssignments(recordSet.assignments());
+        RouteSet[] sol = new RouteSet[dataSet.getNumberOfScenarios()];
+        if (scenario == 0) {
+            for (int i = 0; i < sol.length; i++) {
+                sol[i] = recordSet;
+            }
+        } else {
+            sol[scenario - 1] = recordSet;
+        }
+        solution.setRoutes(sol);
+
+        SolutionChecker checker = new SolutionChecker();
+        if (!checker.checkRoutes(solution, dataSet)) {
+            System.out.println("Solution is not feasible");
+            throw new IllegalStateException("Solution is not feasible");
         }
 
-        return recordSet;
+        return solution;
     }
 
     /**
@@ -148,26 +117,20 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         for (int i = 1; i < routeSet.getCustomers().length; i++) {
             sI = 0.0;
             customer = routeSet.getCustomers()[i];
-            route = routeSet.getRoutes()[customer.getRoute()];
-                sI += route.getEdgeTo(customer).getDistance();
-                sI += route.getEdgeFrom(customer).getDistance();
-                sI -= c[route.getEdgeTo(customer).getFrom().getId()][route.getEdgeFrom(customer).getTo().getId()];
-                customer.setR(customer.getDemand() / sI);
-                perturbC.add(customer);
+            route = routeSet.getRoutes()[routeSet.getCustomers()[i].getRoute()];
+            sI += route.getEdgeTo(customer).getDistance();
+            sI += route.getEdgeFrom(customer).getDistance();
+            sI -= c[route.getEdgeTo(customer).getFrom().getId()][route.getEdgeFrom(customer).getTo().getId()];
+            customer.setR(customer.getDemand() / sI);
+            perturbC.add(customer);
         }
         Collections.sort(perturbC);
 
         int m = Math.min(20, routeSet.getCustomers().length / 10);
         double saving = 0.0;
-        int j = 0;
-        while (perturbC.size() > 0 && j < m) {
-            customer = perturbC.get(0);
-            route = routeSet.getRoutes()[customer.getRoute()];
-            if (route.removeCustomerFeasible(customer, alpha)) {
-                saving += applyBestInsertion(customer);
-                j++;
-            }
-            perturbC.remove(0);
+        for (int j = 0; j < m; j++) {
+            customer = perturbC.get(j);
+            saving += applyBestInsertion(customer);
         }
         routeSet.setRouteLength(routeSet.getRouteLength() - saving);
     }
@@ -201,20 +164,20 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
             if (route != null) {
                 for (Edge e : route.getEdges()) {
                     if (!e.getFrom().equals(from) && !e.getTo().equals(to)) {
-                        saving = 0.0;
-                        saving += e.getDistance();
-                        saving -= c[e.getFrom().getId()][customer.getId()];
-                        saving -= c[customer.getId()][e.getTo().getId()];
-                        if (saving > bestSaving && route.getWeight() + customer.getDemand() <= Q) {
-                            bestSaving = saving;
-                            bestEdge = e;
-                        }
+                    saving = 0.0;
+                    saving += e.getDistance();
+                    saving -= c[e.getFrom().getId()][customer.getId()];
+                    saving -= c[customer.getId()][e.getTo().getId()];
+                    if (saving > bestSaving && route.getWeight() + customer.getDemand() <= Q) {
+                        bestSaving = saving;
+                        bestEdge = e;
+                    }
                     }
                 }
             }
         }
         // Perform cheapest insertion
-        if (bestEdge != null) {
+        if(bestEdge != null) {
             r = routeSet.getRoutes()[bestEdge.getRoute()];
             r.removeEdge(bestEdge);
             r.addEdge(new Edge(bestEdge.getFrom(), customer, c));
@@ -258,8 +221,8 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 continue;
             }
             Route rN = routeSet.getRoutes()[e.getRoute()];
-            // If the move is feasible
-            if (iRoute.getRouteNumber() == rN.getRouteNumber() || (rN.addCustomerFeasible(i, Q) && iRoute.removeCustomerFeasible(i, alpha))) {
+            // Only if new tour is allowed
+            if (i.getRoute()==rN.getRouteNumber() || i.getDemand() + rN.getWeight() <= Q) {
                 saving = 0.0;
                 // Remove customer i from its current route
                 saving += iRoute.getEdgeTo(i).getDistance();
@@ -269,7 +232,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 saving += e.getDistance();
                 saving -= c[i.getId()][e.getFrom().getId()];
                 saving -= c[i.getId()][e.getTo().getId()];
-                if (saving >= epsilon) {
+                if (saving > epsilon) {
                     onePointMove(i, e);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -278,11 +241,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestSavingEdge = e;
                 }
             }
-        }
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            onePointMove(i, largestSavingEdge);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
         }
         return false;
     }
@@ -378,8 +336,8 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                         saving -= c[beforeJ.getId()][i.getId()];
                         saving -= c[afterJ.getId()][i.getId()];
                     }
-                    // If i and j in different routes and new routes are feasible
-                } else if (iRoute.swapCustomersFeasible(i, j, alpha, Q) && jRoute.swapCustomersFeasible(j, i, alpha, Q)) {
+                    // If i and j in different routes and new routes do not exceed vehicle capacity
+                } else if (iRoute.getWeight() + j.getDemand() - i.getDemand() <= Q && jRoute.getWeight() + i.getDemand() - j.getDemand() <= Q) {
                     // Delete i from route i
                     saving += iRoute.getEdgeTo(i).getDistance();
                     saving += iRoute.getEdgeFrom(i).getDistance();
@@ -396,7 +354,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 } else {
                     saving = Double.NEGATIVE_INFINITY;
                 }
-                if (saving >= epsilon) {
+                if (saving > epsilon) {
                     twoPointMove(i, j);
                     routeSet.setRouteLength(routeSet.getRouteLength() - saving);
                     return true;
@@ -405,11 +363,6 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                     largestSavingCustomer = j;
                 }
             }
-        }
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            twoPointMove(i, largestSavingCustomer);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
         }
         return false;
     }
@@ -480,6 +433,7 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         Edge largestSavingEdge = null;
         Customer startE = e.getFrom(), endE = e.getTo(), startF, endF;
         HashSet<Edge> edges = new HashSet<>();
+        // Collect all edges in neighborhood
         if (e.getFrom().getId() != 0) {
             for (Neighbor neighbor : e.getFrom().getNeighbors()) {
                 Customer cN = routeSet.getCustomers()[neighbor.getNeighbor()];
@@ -496,70 +450,53 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
                 edges.add(rN.getEdgeFrom(cN));
             }
         }
-        // Calculate saving for two opt move with each other edge in the route
-
-            for (Edge f : edges) {
-                saving = 0.0;
-                startF = f.getFrom();
-                endF = f.getTo();
-                saving += e.getDistance();
-                saving += f.getDistance();
-                if (e.getRoute() == f.getRoute() && twoOptMoveFeasible(e, f, 0)) {
-                    saving -= c[startE.getId()][startF.getId()];
-                    saving -= c[endE.getId()][endF.getId()];
-                    twoOptMode = 0;
-                } else {
-                    double saving2 = saving;
-                    saving -= c[startE.getId()][endF.getId()];
-                    saving -= c[endE.getId()][startF.getId()];
-                    saving2 -= c[startE.getId()][startF.getId()];
-                    saving2 -= c[endE.getId()][endF.getId()];
-                    if (saving2 > saving) {
-                        if (twoOptMoveFeasible(e, f, 2)) {
-                            twoOptMode = 2;
-                            saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 3)) {
-                            twoOptMode = 3;
-                            saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 1)) {
-                            twoOptMode = 1;
-                        } else if (twoOptMoveFeasible(e, f, 4)) {
-                            twoOptMode = 4;
-                        } else {
-                            continue;
-                        }
+        // Calculate saving for two opt move with edges in neighborhood
+        for (Edge f : edges) {
+            saving = 0.0;
+            startF = f.getFrom();
+            endF = f.getTo();
+            saving += e.getDistance();
+            saving += f.getDistance();
+            if (e.getRoute() == f.getRoute() && twoOptMoveFeasible(e, f, 0)) {
+                saving -= c[startE.getId()][startF.getId()];
+                saving -= c[endE.getId()][endF.getId()];
+                twoOptMode = 0;
+            } else {
+                double saving2 = saving;
+                saving -= c[startE.getId()][endF.getId()];
+                saving -= c[endE.getId()][startF.getId()];
+                saving2 -= c[startE.getId()][startF.getId()];
+                saving2 -= c[endE.getId()][endF.getId()];
+                if (saving2 > saving) {
+                    if (twoOptMoveFeasible(e, f, 2)) {
+                        twoOptMode = 2;
+                        saving = saving2;
+                    } else if (twoOptMoveFeasible(e, f, 1)) {
+                        twoOptMode = 1;
                     } else {
-                        if (twoOptMoveFeasible(e, f, 1)) {
-                            twoOptMode = 1;
-                        } else if (twoOptMoveFeasible(e, f, 4)) {
-                            twoOptMode = 4;
-                        } else if (twoOptMoveFeasible(e, f, 2)) {
-                            twoOptMode = 2;
-                            saving = saving2;
-                        } else if (twoOptMoveFeasible(e, f, 3)) {
-                            twoOptMode = 3;
-                            saving = saving2;
-                        } else {
-                            continue;
-                        }
+                        continue;
+                    }
+                } else {
+                    if (twoOptMoveFeasible(e, f, 1)) {
+                        twoOptMode = 1;
+                    } else if (twoOptMoveFeasible(e, f, 2)) {
+                        twoOptMode = 2;
+                        saving = saving2;
+                    } else {
+                        continue;
                     }
                 }
-                // If it is profitable, perform the move
-                if (saving >= epsilon) {
-                    twoOptMove(e, f, twoOptMode);
-                    routeSet.setRouteLength(routeSet.getRouteLength() - saving);
-                    return true;
-                } else if (saving > largestSaving) {
-                    largestSaving = saving;
-                    largestSavingEdge = f;
-                    largestTwoOptMode = twoOptMode;
-                }
             }
-        // Perform least expensive move if record to record is true
-        if (routeSet.getRouteLength() - largestSaving <= record + deviation && rtr) {
-            twoOptMove(e, largestSavingEdge, largestTwoOptMode);
-            routeSet.setRouteLength(routeSet.getRouteLength() - largestSaving);
-            return true;
+            // If it is profitable, perform the move
+            if (saving > epsilon) {
+                twoOptMove(e, f, twoOptMode);
+                routeSet.setRouteLength(routeSet.getRouteLength() - saving);
+                return true;
+            } else if (saving > largestSaving) {
+                largestSaving = saving;
+                largestSavingEdge = f;
+                largestTwoOptMode = twoOptMode;
+            }
         }
         return false;
     }
@@ -572,89 +509,74 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
      * @return true if a move is made, false otherwise
      */
     private boolean twoOptMove(Edge e, Edge f, int mode) {
-        if (e.getRoute() == f.getRoute()) {
+        if (mode == 0) {
             routeSet.getRoutes()[e.getRoute()].twoOptMove(e, f, c);
             return true;
         }
         Route rE = routeSet.getRoutes()[e.getRoute()];
         Route rF = routeSet.getRoutes()[f.getRoute()];
-        ArrayList<Edge> eToF = new ArrayList<>();
-        ArrayList<Edge> fToE = new ArrayList<>();
-        if (mode == 1 || mode == 2) {
-            Customer next = e.getTo();
-            // Add edges to be removed from e and added to f to a list
-            while (next.getId() != 0) {
-                eToF.add(rE.getEdgeFrom(next));
-                next = rE.getEdgeFrom(next).getTo();
-            }
-        } else if (mode == 3 || mode == 4) {
-            Customer next = e.getFrom();
-            // Add edges to be removed from e and added to f to a list
-            while (next.getId() != 0) {
-                eToF.add(rE.getEdgeTo(next));
-                next = rE.getEdgeTo(next).getFrom();
-            }
+        ArrayList<Edge> edgesR1 = new ArrayList<>();
+        ArrayList<Edge> edgesR2 = new ArrayList<>();
+        Customer next = e.getTo();
+        // Add edges to be removed from e and added to f to a list
+        while (next.getId() != 0) {
+            edgesR1.add(rE.getEdgeFrom(next));
+            next = rE.getEdgeFrom(next).getTo();
         }
-        if (mode == 1 || mode == 3) {
-            // Add edges to be removed from f and added to e to a list
-            Customer next = f.getTo();
+        // Add edges to be removed from f and added to e to a list
+        if (mode == 1) {
+            next = f.getTo();
             while (next.getId() != 0) {
-                fToE.add(rF.getEdgeFrom(next));
+                edgesR2.add(rF.getEdgeFrom(next));
                 next = rF.getEdgeFrom(next).getTo();
             }
-        } else if (mode == 2 || mode == 4) {
-            // Add edges to be removed from f and added to e to a list
-            Customer next = f.getFrom();
+        } else if (mode == 2) {
+            next = f.getFrom();
             while (next.getId() != 0) {
-                fToE.add(rF.getEdgeTo(next));
+                edgesR2.add(rF.getEdgeTo(next));
                 next = rF.getEdgeTo(next).getFrom();
             }
+        } else {
+            System.out.println("Mode two-opt move not correct");
         }
-        // Perform move
+        // Remove edges
         rE.removeEdge(e);
         rF.removeEdge(f);
-        for (Edge edge : eToF) {
+        for (Edge edge : edgesR1) {
             rE.removeEdge(edge);
         }
-        for (Edge edge : fToE) {
+        for (Edge edge : edgesR2) {
             rF.removeEdge(edge);
         }
+        // Add edges
         if (mode == 1) {
-            for (Edge edge : fToE) {
+            for (Edge edge : edgesR2) {
                 rE.addEdge(edge);
             }
-            for (Edge edge : eToF) {
+            for (Edge edge : edgesR1) {
                 rF.addEdge(edge);
             }
             rE.addEdge(new Edge(e.getFrom(), f.getTo(), c));
             rF.addEdge(new Edge(f.getFrom(), e.getTo(), c));
         } else if (mode == 2) {
-            for (Edge edge : fToE) {
+            for (Edge edge : edgesR2) {
                 rE.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
             }
-            for (Edge edge : eToF) {
+            for (Edge edge : edgesR1) {
                 rF.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
             }
             rE.addEdge(new Edge(e.getFrom(), f.getFrom(), c));
             rF.addEdge(new Edge(e.getTo(), f.getTo(), c));
-        } else if (mode == 3) {
-            for (Edge edge : fToE) {
-                rE.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
-            }
-            for (Edge edge : eToF) {
-                rF.addEdge(new Edge(edge.getTo(), edge.getFrom(), edge.getDistance()));
-            }
-            rE.addEdge(new Edge(f.getTo(), e.getTo(), c));
-            rF.addEdge(new Edge(f.getFrom(), e.getFrom(), c));
-        } else if (mode == 4) {
-            for (Edge edge : fToE) {
-                rE.addEdge(edge);
-            }
-            for (Edge edge : eToF) {
-                rF.addEdge(edge);
-            }
-            rE.addEdge(new Edge(f.getFrom(), e.getTo(), c));
-            rF.addEdge(new Edge(e.getFrom(), f.getTo(), c));
+        } else {
+            System.out.println("Mode two-opt move not correct");
+        }
+
+        // Remove a route if necessary
+        if (f.getFrom() == e.getTo() && mode == 1) {
+            routeSet.getRoutes()[f.getRoute()] = null;
+        }
+        if (e.getFrom() == f.getTo() && mode == 1) {
+            routeSet.getRoutes()[e.getRoute()] = null;
         }
 
         return true;
@@ -674,48 +596,44 @@ public class RecordToRecordDAVRPH4MT implements Callable<RouteSet> {
         if (e.getRoute() == f.getRoute()) {
             return true;
         }
-        if ((mode == 1 || mode == 4) && (e.getTo() == f.getTo() || e.getFrom() == f.getFrom())) {
+
+        if (mode == 1 && (e.getTo() == f.getTo() || e.getFrom() == f.getFrom())) {
             return false;
         }
-        if ((mode == 2 || mode == 3) && (e.getTo() == f.getFrom() || f.getTo() == e.getFrom())) {
+        if (mode == 2 && (e.getTo() == f.getFrom() || f.getTo() == e.getFrom())) {
             return false;
         }
         Route rE = routeSet.getRoutes()[e.getRoute()];
         Route rF = routeSet.getRoutes()[f.getRoute()];
-        ArrayList<Customer> eToF = new ArrayList<>();
-        ArrayList<Customer> fToE = new ArrayList<>();
-        if (mode == 1 || mode == 2) {
-            Customer next = e.getTo();
-            // Add edges to be removed from e and added to f to a list
-            while (next.getId() != 0) {
-                eToF.add(next);
-                next = rE.getEdgeFrom(next).getTo();
-            }
-        } else if (mode == 3 || mode == 4) {
-            Customer next = e.getFrom();
-            // Add edges to be removed from e and added to f to a list
-            while (next.getId() != 0) {
-                eToF.add(next);
-                next = rE.getEdgeTo(next).getFrom();
-            }
+        int q1 = rE.getWeight();
+        int q2 = rF.getWeight();
+        Customer next = e.getTo();
+        // Add edges to be removed from e and added to f to a list
+        while (next.getId() != 0) {
+            q1 -= next.getDemand();
+            q2 += next.getDemand();
+            next = rE.getEdgeFrom(next).getTo();
         }
-        if (mode == 1 || mode == 3) {
+        if (mode == 1) {
             // Add edges to be removed from f and added to e to a list
-            Customer next = f.getTo();
+            next = f.getTo();
             while (next.getId() != 0) {
-                fToE.add(next);
+                q1 += next.getDemand();
+                q2 -= next.getDemand();
                 next = rF.getEdgeFrom(next).getTo();
             }
-        } else if (mode == 2 || mode == 4) {
+        } else if (mode == 2) {
             // Add edges to be removed from f and added to e to a list
-            Customer next = f.getFrom();
+            next = f.getFrom();
             while (next.getId() != 0) {
-                fToE.add(next);
+                q1 += next.getDemand();
+                q2 -= next.getDemand();
                 next = rF.getEdgeTo(next).getFrom();
             }
+        } else {
+            System.out.println("Mode two-opt move not correct");
         }
-
         // Check if move is feasible
-        return (rE.swapCustomersFeasible(eToF, fToE, alpha, Q) && rF.swapCustomersFeasible(fToE, eToF, alpha, Q));
+        return !(q1 > Q || q2 > Q);
     }
 }

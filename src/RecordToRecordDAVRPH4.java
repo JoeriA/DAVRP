@@ -15,6 +15,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
     private int P;
     private int K2;
     private int D2;
+    private double delta;
     private int NBListSize;
     private double[][] c;
     private int Q;
@@ -32,6 +33,7 @@ public class RecordToRecordDAVRPH4 implements Solver {
         P = 2;
         K2 = 5;
         D2 = 5;
+        delta = 0.01;
         NBListSize = 40;
         beta = 0.6;
     }
@@ -84,8 +86,10 @@ public class RecordToRecordDAVRPH4 implements Solver {
             deviation = 0.01 * record;
             RouteSet recordSet = routeSet.getCopy();
 
+            int p = 0;
+            int P2 = 1;
             int k = 0;
-            while (k < K2) {
+            while (p < P2) {
 //                System.out.println("p: " + p);
 //                System.out.println("k: " + k);
                 // Start improvement iterations
@@ -97,6 +101,10 @@ public class RecordToRecordDAVRPH4 implements Solver {
                             findTwoPointMove(i, true);
                             Route r = routeSet.getRoutes()[i.getRoute()];
                             findTwoOptMoveNew(r.getEdgeFrom(i), true);
+                            r = routeSet.getRoutes()[i.getRoute()];
+                            if (r.getEdgeTo(i).getFrom().getId() == 0) {
+                                findTwoOptMoveNew(r.getEdgeTo(i), true);
+                            }
                         }
                     }
                 }
@@ -110,7 +118,12 @@ public class RecordToRecordDAVRPH4 implements Solver {
                             boolean twoPoint = findTwoPointMove(i, false);
                             Route r = routeSet.getRoutes()[i.getRoute()];
                             boolean twoOpt = findTwoOptMoveNew(r.getEdgeFrom(i), false);
-                            if (onePoint || twoPoint || twoOpt) {
+                            boolean twoOpt2 = false;
+                            r = routeSet.getRoutes()[i.getRoute()];
+                            if (r.getEdgeTo(i).getFrom().getId() == 0) {
+                                twoOpt2 = findTwoOptMoveNew(r.getEdgeTo(i), false);
+                            }
+                            if (onePoint || twoPoint || twoOpt || twoOpt2) {
                                 moveMade = true;
                             }
                         }
@@ -119,12 +132,21 @@ public class RecordToRecordDAVRPH4 implements Solver {
                 // Update record when necessary
                 if (routeSet.getRouteLength() < record - epsilon) {
                     record = routeSet.getRouteLength();
-                    deviation = 0.01 * record;
+                    deviation = delta * record;
                     recordSet = routeSet.getCopy();
                     k = 0;
-//                    System.out.println("record: " + record);
                 }
                 k++;
+                if (k >= K2) {
+//                    perturb();
+                    p++;
+                    k = 0;
+                }
+                if (routeSet.getRouteLength() < record - epsilon) {
+                    record = routeSet.getRouteLength();
+                    deviation = delta * record;
+                    recordSet = routeSet.getCopy();
+                }
             }
             solutions[scenario] = recordSet.getCopy();
             objectiveValue += dataSet.getScenarioProbabilities()[scenario] * recordSet.getRouteLength();
