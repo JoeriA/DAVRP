@@ -1,0 +1,34 @@
+Number of customers: 10
+Vehicle capacity     50
+Alpha:               0.75
+Number of scenarios: 1
+
+Location coordinates:
+0 0.0 0.0
+1 -1.14604 0.40682
+2 0.93517 -0.34836
+3 -0.05054 0.63759
+4 -1.31028 1.58944
+5 -0.64249 1.57958
+6 -0.99116 0.7626
+7 -1.90391 -0.28216
+8 0.47932 -1.55511
+9 -0.76001 -0.15091
+10 0.93985 1.01631
+
+Demand per scenario:
+1 5
+2 4
+3 5
+4 5
+5 8
+6 2
+7 4
+8 8
+9 6
+10 7
+
+Probability of each scenario occurring:
+1.0
+
+Travel costs:
